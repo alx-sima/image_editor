@@ -1,7 +1,7 @@
 # Copyright Sima Alexandru 312CA (2022-2023)
 
 CC=gcc
-CFLAGS=-Wall -Wextra
+CFLAGS=-Wall -Wextra -g
 
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
