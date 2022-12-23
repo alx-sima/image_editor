@@ -1,8 +1,6 @@
 #ifndef _STRUCTURI_H
 #define _STRUCTURI_H
 
-#include <stddef.h>
-
 union pixel {
 	struct {
 		unsigned char r;
@@ -22,8 +20,8 @@ struct imagine {
 	unsigned char val_max;
 	struct coord st;
 	struct coord dr;
-	size_t inaltime;
-	size_t latime;
+	long inaltime;
+	long latime;
 	int color;
 };
 

@@ -2,5 +2,6 @@ image_editor
 vgcore.*
 *.o
 
+*.jpg
 *.pgm
 *.ppm
