@@ -11,8 +11,8 @@
 static int verif_format(FILE *f);
 // Returneaza prima linie care nu contine un comentariu (nu incepe cu #).
 static char *omite_comentarii(FILE *f);
-static unsigned char *citeste_valori_ascii(FILE *f, int n);
-static unsigned char *citeste_valori_binar(FILE *f, int n);
+static unsigned char *citeste_valori_ascii(FILE *f, size_t n);
+static unsigned char *citeste_valori_binar(FILE *f, size_t n);
 
 char *citire_linie(FILE *stream)
 {
@@ -73,8 +73,8 @@ struct imagine *incarcare_fisier()
 
 	// TODO
 	char *end;
-	int m = strtol(linie, &end, 10);
-	int n = strtol(end, NULL, 10);
+	size_t latime = strtoll(linie, &end, 10);
+	size_t inaltime = strtoll(end, NULL, 10);
 	int val_max = 1; // TODO
 
 	// Imaginile alb-negru nu au si o valoare maxima a culorii.
@@ -87,30 +87,32 @@ struct imagine *incarcare_fisier()
 	free(linie);
 	unsigned char *a;
 	if (ascii)
-		a = citeste_valori_ascii(f, n * m * octeti_per_pixel);
+		a = citeste_valori_ascii(f, inaltime * latime * octeti_per_pixel);
 	else
-		a = citeste_valori_binar(f, n * m * octeti_per_pixel);
+		a = citeste_valori_binar(f, inaltime * latime * octeti_per_pixel);
 	if (!a) {
 		// TODO
 		return NULL;
 	}
 
 	struct imagine *img = (struct imagine *)malloc(sizeof(struct imagine));
-	img->pixeli = aloca_matrice_pixeli(n, m);
+	img->pixeli = aloca_matrice_pixeli(inaltime, latime);
 	img->val_max = val_max;
 	img->color = color;
-	img->n = n;
-	img->m = m;
+	img->st = (struct coord){.x = 0, .y = 0};
+	img->st = (struct coord){.x = latime, .y = inaltime};
+	img->inaltime = inaltime;
+	img->latime = latime;
 
-	for (int i = 0; i < n; ++i) {
-		for (int j = 0; j < m; ++j) {
+	for (size_t i = 0; i < inaltime; ++i) {
+		for (size_t j = 0; j < latime; ++j) {
 			union pixel *p = &img->pixeli[i][j];
 			if (color) {
-				p->culoare.r = a[i * m + j * octeti_per_pixel];
-				p->culoare.g = a[i * m + j * octeti_per_pixel + 1];
-				p->culoare.b = a[i * m + j * octeti_per_pixel + 2];
+				p->culoare.r = a[i * latime + j * octeti_per_pixel];
+				p->culoare.g = a[i * latime + j * octeti_per_pixel + 1];
+				p->culoare.b = a[i * latime + j * octeti_per_pixel + 2];
 			} else {
-				p->val = a[i * m + j];
+				p->val = a[i * latime + j];
 			}
 		}
 	}
@@ -147,12 +149,12 @@ void salvare_imagine(struct imagine img)
 		format += 3;
 
 	fprintf(f, "P%d\n", format);
-	fprintf(f, "%d %d\n", img.m, img.n);
+	fprintf(f, "%lu %lu\n", img.latime, img.inaltime);
 	if (format % 3 != 1)
 		fprintf(f, "%d\n", img.val_max);
 
-	for (int i = 0; i < img.n; ++i) {
-		for (int j = 0; j < img.m; ++j) {
+	for (size_t i = 0; i < img.inaltime; ++i) {
+		for (size_t j = 0; j < img.latime; ++j) {
 			union pixel p = img.pixeli[i][j];
 			if (format < 4) {
 				if (img.color)
@@ -161,7 +163,7 @@ void salvare_imagine(struct imagine img)
 				else
 					fprintf(f, "%d", p.val);
 
-				if (j != img.m - 1)
+				if (j != img.latime - 1)
 					fprintf(f, " ");
 			} else {
 				if (img.color)
@@ -198,7 +200,7 @@ static char *omite_comentarii(FILE *f)
 	return linie;
 }
 
-static unsigned char *citeste_valori_ascii(FILE *f, int n)
+static unsigned char *citeste_valori_ascii(FILE *f, size_t n)
 {
 	unsigned char *v = (unsigned char *)malloc(n * sizeof(unsigned char));
 	if (!v)
@@ -208,7 +210,7 @@ static unsigned char *citeste_valori_ascii(FILE *f, int n)
 	char *p = linie;
 	char *q;
 
-	int i = 0;
+	size_t i = 0;
 	while (i < n) {
 		unsigned char val = (unsigned char)strtol(p, &q, 10);
 		// Nu mai exista valori pe rand, se trece pe urmatorul.
@@ -226,7 +228,7 @@ static unsigned char *citeste_valori_ascii(FILE *f, int n)
 	return v;
 }
 
-static unsigned char *citeste_valori_binar(FILE *f, int n)
+static unsigned char *citeste_valori_binar(FILE *f, size_t n)
 {
 	unsigned char *v = (unsigned char *)malloc(n * sizeof(unsigned char));
 	if (!v)
