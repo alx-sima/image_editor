@@ -2,6 +2,7 @@
 
 CC=gcc
 CFLAGS=-Wall -Wextra -g
+LDLIBS=-lm
 
 SRCS=$(wildcard *.c)
 OBJS=$(patsubst %.c, %.o, $(SRCS))
@@ -12,9 +13,9 @@ OUTIMG=out.pgm
 
 define CMDS
 LOAD $(IMAGE)
+EQUALIZE
 HISTOGRAM 10 30
 HISTOGRAM 5 255
-HISTOGRAM 255 255
 EXIT
 endef
 
@@ -22,12 +23,12 @@ build: $(TARGET)
 
 export CMDS
 test: $(TARGET) $(IMAGE)
-	echo "$$CMDS" | valgrind -s --leak-check=full --track-origins=yes ./$(TARGET)
-	gimp $(OUTIMG)
+	echo "$$CMDS" | valgrind -s --leak-check=full --track-origins=yes --show-leak-kinds=all ./$(TARGET)
+	#gimp $(OUTIMG)
 	-rm -f $(OUTIMG)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
 %.pgm %.ppm: %.jpg
 	convert $^ $@

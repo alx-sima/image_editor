@@ -1,5 +1,6 @@
 // Copyright Sima Alexandru 312CA (2022-2023)
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,7 +9,7 @@
 #include "fisiere.h"
 #include "structuri.h"
 
-void ordoneaza(long *a, long *b)
+static void ordoneaza(long *a, long *b)
 {
 	if (a > b) {
 		*a ^= *b;
@@ -91,6 +92,25 @@ struct imagine *decupare_imagine(struct imagine *img)
 	return subimg;
 }
 
+long *frecventa_pixeli(struct imagine *img, struct coord st, struct coord dr,
+					   int nr_interv)
+{
+	long *frecv_pixeli = (long *)calloc(nr_interv, sizeof(long));
+	if (!frecv_pixeli) {
+		// TODO
+		return NULL;
+	}
+
+	int nr_valori = (int)img->val_max + 1;
+	long val_per_interv = nr_valori / nr_interv + (nr_valori % nr_interv != 0);
+	for (long i = st.y; i < dr.y; ++i) {
+		for (long j = st.x; j < dr.x; ++j)
+			++frecv_pixeli[img->pixeli[i][j].val / val_per_interv];
+	}
+
+	return frecv_pixeli;
+}
+
 void histograma(struct imagine *img)
 {
 	if (!img) {
@@ -106,16 +126,10 @@ void histograma(struct imagine *img)
 	long x, y;
 	sscanf(argumente, " %ld %ld", &x, &y);
 
-	long *frecv_pixeli = (long *)calloc(x, sizeof(long));
+	long *frecv_pixeli = frecventa_pixeli(img, img->st, img->dr, x);
 	if (!frecv_pixeli) {
 		// TODO
 		return;
-	}
-
-	long valori_per_interv = img->val_max / x + (img->val_max % x != 0);
-	for (long i = 0; i < img->inaltime; ++i) {
-		for (long j = 0; j < img->latime; ++j)
-			++frecv_pixeli[img->pixeli[i][j].val / valori_per_interv];
 	}
 
 	long frecv_max = 0;
@@ -125,7 +139,7 @@ void histograma(struct imagine *img)
 	}
 
 	for (int i = 0; i < x; ++i) {
-		long nr_stelute = frecv_pixeli[i] * x / frecv_max;
+		long nr_stelute = frecv_pixeli[i] * y / frecv_max;
 		printf("%ld\t|\t", nr_stelute);
 		for (long i = 0; i < nr_stelute; ++i)
 			putchar('*');
@@ -133,6 +147,46 @@ void histograma(struct imagine *img)
 	}
 
 	free(frecv_pixeli);
+}
+
+unsigned char restrange(double x, unsigned char max)
+{
+	x = round(x);
+	if (x < 0)
+		return 0;
+	if (x > max)
+		return max;
+	return (unsigned char)x;
+}
+
+void egalizare(struct imagine *img)
+{
+	if (!img) {
+		printf("No image loaded\n");
+		return;
+	}
+
+	long suprafata = img->inaltime * img->latime;
+
+	long *frecv = frecventa_pixeli(
+		img, (struct coord){.x = 0, .y = 0},
+		(struct coord){.x = img->latime, .y = img->inaltime}, img->val_max + 1);
+	if (!frecv) {
+		// TODO
+		return;
+	}
+
+	for (long i = 1; i <= img->val_max; ++i)
+		frecv[i] += frecv[i - 1];
+
+	for (long i = 0; i < img->inaltime; ++i) {
+		for (long j = 0; j < img->latime; ++j) {
+			unsigned char *p = &img->pixeli[i][j].val;
+			*p = restrange((double)img->val_max * frecv[*p] / suprafata,
+						   img->val_max);
+		}
+	}
+	free(frecv);
 }
 
 void citire_comenzi()
@@ -163,6 +217,7 @@ void citire_comenzi()
 		} else if (!strcmp(comanda, "HISTOGRAM")) {
 			histograma(img);
 		} else if (!strcmp(comanda, "EQUALIZE")) {
+			egalizare(img);
 			// TODO
 		} else if (!strcmp(comanda, "ROTATE")) {
 			// TODO

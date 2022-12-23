@@ -100,7 +100,7 @@ struct imagine *incarcare_fisier()
 	img->val_max = val_max;
 	img->color = color;
 	img->st = (struct coord){.x = 0, .y = 0};
-	img->st = (struct coord){.x = latime, .y = inaltime};
+	img->dr = (struct coord){.x = latime, .y = inaltime};
 	img->inaltime = inaltime;
 	img->latime = latime;
 
