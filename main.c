@@ -112,7 +112,7 @@ unsigned char *citeste_valori_binar(FILE *f, int n)
 
 // Returneaza cifra din magic word a formatului.
 // TODO
-int format(FILE *f)
+int verif_format(FILE *f)
 {
 	char format[4]; // TODO
 	fgets(format, 4, f);
@@ -159,7 +159,7 @@ struct imagine *incarcare_fisier()
 		return NULL;
 	}
 
-	int form = format(f);
+	int form = verif_format(f);
 	int ascii = form < 4;
 	int color = form % 3 == 0;
 	// Imaginile color (P3 si P6) folosesc cate
@@ -219,6 +219,63 @@ struct imagine *incarcare_fisier()
 	return img;
 }
 
+void salvare_imagine(struct imagine img)
+{
+	char *nume_fisier = strtok(NULL, " ");
+	if (!nume_fisier) {
+		// TODO
+	}
+
+	FILE *f = fopen(nume_fisier, "w");
+	if (!f) {
+		// TODO
+	}
+
+	int format = 1;
+	if (img.color) {
+		format = 3;
+	} else if (img.val_max != 1) {
+		format = 2;
+	}
+
+	char *ascii = strtok(NULL, " ");
+	// Daca este prezent cuvantul ascii in comanda,
+	// imaginea se salveaza in format text.
+	if (!(ascii && !(strcmp(ascii, "ascii"))))
+		format += 3;
+
+	fprintf(f, "P%d\n", format);
+	fprintf(f, "%d %d\n", img.m, img.n);
+	if (format % 3 != 1)
+		fprintf(f, "%d\n", img.val_max);
+
+	for (int i = 0; i < img.n; ++i) {
+		for (int j = 0; j < img.m; ++j) {
+			union pixel p = img.pixeli[i][j];
+			if (format < 4) {
+				if (img.color)
+					fprintf(f, "%d %d %d", p.culoare.r, p.culoare.g,
+							p.culoare.b);
+				else
+					fprintf(f, "%d", p.val);
+
+				if (j != img.m - 1)
+					fprintf(f, " ");
+			} else {
+				if (img.color)
+					fwrite(&p.culoare, sizeof(unsigned char), 3, f);
+				else
+					fwrite(&p.val, sizeof(unsigned char), 1, f);
+			}
+		}
+		if (format < 4)
+			fprintf(f, "\n");
+	}
+
+	printf("Saved %s\n", nume_fisier);
+	fclose(f);
+}
+
 void citire_comanda(struct imagine **img)
 {
 	char *linie = citire_linie(stdin);
@@ -230,9 +287,8 @@ void citire_comanda(struct imagine **img)
 
 	char *comanda = strtok(linie, " ");
 	if (!comanda) {
-		// TODO
+		printf("Invalid command\n");
 		free(linie);
-		eliberare_imagine(*img);
 		return;
 	}
 	if (!strcmp(comanda, "LOAD")) {
@@ -252,7 +308,11 @@ void citire_comanda(struct imagine **img)
 	} else if (!strcmp(comanda, "APPLY")) {
 		// TODO
 	} else if (!strcmp(comanda, "SAVE")) {
-		// TODO
+		if (*img) {
+			salvare_imagine(**img);
+		} else {
+			printf("No image loaded\n");
+		}
 	} else if (!strcmp(comanda, "EXIT")) {
 		if (*img) {
 			free(linie);

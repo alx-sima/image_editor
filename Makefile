@@ -13,4 +13,4 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
-	-rm -f $(OBJS) $(TARGET)
+	-rm -f $(OBJS) $(TARGET) vgcore.*
