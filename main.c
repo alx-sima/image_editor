@@ -28,6 +28,11 @@ void selectare_tot(struct imagine *img)
 
 void selectare_suprafata(struct imagine *img)
 {
+	if (!img) {
+		printf("No image loaded\n");
+		return;
+	}
+
 	long x1, x2, y1, y2;
 	// Ia restul randului.
 	char *selectie = strtok(NULL, "");
@@ -36,15 +41,15 @@ void selectare_suprafata(struct imagine *img)
 		selectare_tot(img);
 		printf("Selected 0 0 %ld %ld\n", img->latime, img->inaltime);
 		return;
-	} else {
-		if (sscanf(selectie, " %ld %ld %ld %ld", &x1, &y1, &x2, &y2) != 4) {
-			printf("Invalid coordinates\n");
-			return;
-		}
-
-		ordoneaza(&x1, &x2);
-		ordoneaza(&y1, &y2);
 	}
+	if (sscanf(selectie, " %ld %ld %ld %ld", &x1, &y1, &x2, &y2) != 4) {
+		printf("Invalid coordinates\n");
+		return;
+	}
+
+	ordoneaza(&x1, &x2);
+	ordoneaza(&y1, &y2);
+
 	if (x1 < 0 || x2 > img->latime || y1 < 0 || y1 > img->inaltime) {
 		printf("Invalid coordinates\n");
 		return;
@@ -57,11 +62,15 @@ void selectare_suprafata(struct imagine *img)
 
 struct imagine *decupare_imagine(struct imagine *img)
 {
+	if (!img) {
+		printf("No image loaded\n");
+		return NULL;
+	}
+
 	struct imagine *subimg = (struct imagine *)malloc(sizeof(struct imagine));
 	if (!subimg)
 		return NULL;
 
-	// Majoritatea valorilor vor ramane neschimbate.
 	*subimg = *img;
 	subimg->latime = img->dr.x - img->st.x;
 	subimg->inaltime = img->dr.y - img->st.y;
@@ -72,15 +81,58 @@ struct imagine *decupare_imagine(struct imagine *img)
 	}
 
 	for (long i = 0; i < subimg->inaltime; ++i) {
-		for (long j = 0; j < subimg->latime; ++j) {
+		for (long j = 0; j < subimg->latime; ++j)
 			subimg->pixeli[i][j] = img->pixeli[i + img->st.x][j + img->st.y];
-		}
 	}
 	selectare_tot(subimg);
 
 	printf("Image cropped\n");
 	eliberare_imagine(img);
 	return subimg;
+}
+
+void histograma(struct imagine *img)
+{
+	if (!img) {
+		printf("No image loaded\n");
+		return;
+	}
+	if (img->color) {
+		printf("Black and white image needed\n");
+		return;
+	}
+
+	char *argumente = strtok(NULL, "");
+	long x, y;
+	sscanf(argumente, " %ld %ld", &x, &y);
+
+	long *frecv_pixeli = (long *)calloc(x, sizeof(long));
+	if (!frecv_pixeli) {
+		// TODO
+		return;
+	}
+
+	long valori_per_interv = img->val_max / x + (img->val_max % x != 0);
+	for (long i = 0; i < img->inaltime; ++i) {
+		for (long j = 0; j < img->latime; ++j)
+			++frecv_pixeli[img->pixeli[i][j].val / valori_per_interv];
+	}
+
+	long frecv_max = 0;
+	for (long i = 0; i < x; ++i) {
+		if (frecv_pixeli[i] > frecv_max)
+			frecv_max = frecv_pixeli[i];
+	}
+
+	for (int i = 0; i < x; ++i) {
+		long nr_stelute = frecv_pixeli[i] * x / frecv_max;
+		printf("%ld\t|\t", nr_stelute);
+		for (long i = 0; i < nr_stelute; ++i)
+			putchar('*');
+		putchar('\n');
+	}
+
+	free(frecv_pixeli);
 }
 
 void citire_comenzi()
@@ -107,21 +159,15 @@ void citire_comenzi()
 				eliberare_imagine(img);
 			img = incarcare_fisier();
 		} else if (!strcmp(comanda, "SELECT")) {
-			if (img)
-				selectare_suprafata(img);
-			else
-				printf("No image loaded\n");
+			selectare_suprafata(img);
 		} else if (!strcmp(comanda, "HISTOGRAM")) {
-			// TODO
+			histograma(img);
 		} else if (!strcmp(comanda, "EQUALIZE")) {
 			// TODO
 		} else if (!strcmp(comanda, "ROTATE")) {
 			// TODO
 		} else if (!strcmp(comanda, "CROP")) {
-			if (img)
-				img = decupare_imagine(img);
-			else
-				printf("No image loaded\n");
+			img = decupare_imagine(img);
 		} else if (!strcmp(comanda, "APPLY")) {
 			// TODO
 		} else if (!strcmp(comanda, "SAVE")) {
