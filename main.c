@@ -4,6 +4,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+union pixel {
+	struct {
+		unsigned char r;
+		unsigned char g;
+		unsigned char b;
+	} culoare;
+	unsigned char val;
+};
+
+struct imagine {
+	union pixel **pixeli;
+	unsigned char val_max;
+	int n, m;
+	int color;
+};
+
 // Citeste o linie intr-un string alocat dinamic.
 // Intoarce NULL daca citirea nu s-a putut efectua.
 char *citire_linie(FILE *stream)
@@ -55,18 +71,19 @@ char *omite_comentarii(FILE *f)
 	return linie;
 }
 
-int *citeste_valori(FILE *f, int n)
+unsigned char *citeste_valori_ascii(FILE *f, int n)
 {
-	int *v = (int *)malloc(n * sizeof(int));
+	unsigned char *v = (unsigned char *)malloc(n * sizeof(unsigned char));
 	if (!v)
 		return NULL;
 
 	char *linie = omite_comentarii(f);
 	char *p = linie;
 	char *q;
+
 	int i = 0;
 	while (i < n) {
-		int val = strtol(p, &q, 10);
+		unsigned char val = (unsigned char)strtol(p, &q, 10);
 		// Nu mai exista valori pe rand, se trece pe urmatorul.
 		if (p == q) {
 			free(linie);
@@ -82,6 +99,17 @@ int *citeste_valori(FILE *f, int n)
 	return v;
 }
 
+unsigned char *citeste_valori_binar(FILE *f, int n)
+{
+	unsigned char *v = (unsigned char *)malloc(n * sizeof(unsigned char));
+	if (!v)
+		return NULL;
+
+	fread(v, sizeof(unsigned char), n, f);
+
+	return v;
+}
+
 // Returneaza cifra din magic word a formatului.
 // TODO
 int format(FILE *f)
@@ -91,21 +119,53 @@ int format(FILE *f)
 	return format[1] - '0';
 }
 
-void incarcare_fisier()
+void eliberare_matrice_pixeli(union pixel **mat, int n)
+{
+	for (int i = 0; i < n; ++i)
+		free(mat[i]);
+	free(mat);
+}
+
+void eliberare_imagine(struct imagine *img)
+{
+	eliberare_matrice_pixeli(img->pixeli, img->n);
+	free(img);
+}
+
+union pixel **aloca_matrice_pixeli(int n, int m)
+{
+	union pixel **mat = (union pixel **)malloc(n * sizeof(union pixel *));
+	if (!mat)
+		return NULL;
+
+	for (int i = 0; i < n; ++i) {
+		mat[i] = (union pixel *)malloc(m * sizeof(union pixel));
+		if (!mat[i]) {
+			eliberare_matrice_pixeli(mat, i);
+			return NULL;
+		}
+	}
+
+	return mat;
+}
+
+struct imagine *incarcare_fisier()
 {
 	char *nume = strtok(NULL, "");
 
 	FILE *f = fopen(nume, "r");
 	if (!f) {
-		// TODO
-		return;
+		printf("Failed to load %s\n", nume);
+		return NULL;
 	}
 
 	int form = format(f);
-	int ascii = form > 3;
+	int ascii = form < 4;
+	int color = form % 3 == 0;
 	// Imaginile color (P3 si P6) folosesc cate
 	// 3 octeti pt un pixel, iar restul cate 1.
-	int octeti_per_pixel = (form % 3 == 0 ? 3 : 1);
+
+	int octeti_per_pixel = (color ? 3 : 1);
 
 	char *linie = omite_comentarii(f);
 
@@ -113,39 +173,72 @@ void incarcare_fisier()
 	char *end;
 	int m = strtol(linie, &end, 10);
 	int n = strtol(end, NULL, 10);
+	int val_max = 1; // TODO
 
-	if (form != 1) {
+	// Imaginile alb-negru nu au si o valoare maxima a culorii.
+	if (form % 3 != 1) {
 		free(linie);
 		linie = omite_comentarii(f);
-		int val_max = strtol(linie, NULL, 10);
+		val_max = strtol(linie, NULL, 10);
 	}
 
 	free(linie);
-	int *a = citeste_valori(f, n * m * octeti_per_pixel);
+	unsigned char *a;
+	if (ascii)
+		a = citeste_valori_ascii(f, n * m * octeti_per_pixel);
+	else
+		a = citeste_valori_binar(f, n * m * octeti_per_pixel);
 	if (!a) {
 		// TODO
-		return;
+		return NULL;
 	}
+
+	struct imagine *img = (struct imagine *)malloc(sizeof(struct imagine));
+	img->pixeli = aloca_matrice_pixeli(n, m);
+	img->val_max = val_max;
+	img->color = color;
+	img->n = n;
+	img->m = m;
+
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < m; ++j) {
+			if (color) {
+				img->pixeli[i][j].culoare.r = a[i * m + j * octeti_per_pixel];
+				img->pixeli[i][j].culoare.g =
+					a[i * m + j * octeti_per_pixel + 1];
+				img->pixeli[i][j].culoare.b =
+					a[i * m + j * octeti_per_pixel + 2];
+			} else
+				img->pixeli[i][j].val = a[i * m + j];
+		}
+	}
+	printf("Loaded %s\n", nume);
 
 	free(a);
 	fclose(f);
+	return img;
 }
 
-void citire_comanda()
+void citire_comanda(struct imagine **img)
 {
 	char *linie = citire_linie(stdin);
 	if (!linie) {
 		// TODO
+		eliberare_imagine(*img);
 		return;
 	}
 
 	char *comanda = strtok(linie, " ");
 	if (!comanda) {
 		// TODO
+		free(linie);
+		eliberare_imagine(*img);
 		return;
 	}
 	if (!strcmp(comanda, "LOAD")) {
-		incarcare_fisier();
+		if (*img)
+			eliberare_imagine(*img);
+		*img = incarcare_fisier();
 	} else if (!strcmp(comanda, "SELECT")) {
 		// TODO
 	} else if (!strcmp(comanda, "HISTOGRAM")) {
@@ -161,7 +254,12 @@ void citire_comanda()
 	} else if (!strcmp(comanda, "SAVE")) {
 		// TODO
 	} else if (!strcmp(comanda, "EXIT")) {
-		// TODO
+		if (*img) {
+			free(linie);
+			eliberare_imagine(*img);
+			exit(EXIT_SUCCESS);
+		}
+		printf("No image loaded\n");
 	} else {
 		printf("Invalid command\n");
 	}
@@ -171,8 +269,9 @@ void citire_comanda()
 
 int main(void)
 {
+	struct imagine *img = NULL;
 	while (1) {
-		citire_comanda();
+		citire_comanda(&img);
 	}
 	return 0;
 }
