@@ -49,8 +49,8 @@ void selectare_suprafata(struct imagine *img)
 		return;
 	}
 
-	img->st = (struct coord){.x = x1, .y = y1};
-	img->dr = (struct coord){.x = x2, .y = y2};
+	img->st = (struct coord){y1, x1};
+	img->dr = (struct coord){y2, x2};
 	printf("Selected %ld %ld %ld %ld\n", x1, y1, x2, y2);
 }
 
@@ -66,8 +66,8 @@ struct imagine *decupare_imagine(struct imagine *img)
 		return NULL;
 
 	*subimg = *img;
-	subimg->latime = img->dr.x - img->st.x;
-	subimg->inaltime = img->dr.y - img->st.y;
+	subimg->inaltime = img->dr.i - img->st.i;
+	subimg->latime = img->dr.j - img->st.j;
 	subimg->pixeli = aloca_matrice_pixeli(subimg->inaltime, subimg->latime);
 	if (!subimg->pixeli) {
 		free(subimg);
@@ -76,7 +76,7 @@ struct imagine *decupare_imagine(struct imagine *img)
 
 	for (long i = 0; i < subimg->inaltime; ++i) {
 		for (long j = 0; j < subimg->latime; ++j)
-			subimg->pixeli[i][j] = img->pixeli[i + img->st.x][j + img->st.y];
+			subimg->pixeli[i][j] = img->pixeli[i + img->st.i][j + img->st.j];
 	}
 	selectare_tot(subimg);
 
@@ -132,9 +132,9 @@ void egalizare(struct imagine *img)
 
 	long suprafata = img->inaltime * img->latime;
 
-	long *frecv = frecventa_pixeli(
-		img, (struct coord){.x = 0, .y = 0},
-		(struct coord){.x = img->latime, .y = img->inaltime}, img->val_max + 1);
+	long *frecv = frecventa_pixeli(img, (struct coord){0, 0},
+								   (struct coord){img->inaltime, img->latime},
+								   img->val_max + 1);
 	if (!frecv) {
 		// TODO
 		return;
@@ -214,11 +214,8 @@ static void ordoneaza(long *a, long *b)
 
 static void selectare_tot(struct imagine *img)
 {
-	img->st = (struct coord){.x = 0, .y = 0};
-	img->dr = (struct coord){
-		.x = img->latime,
-		.y = img->inaltime,
-	};
+	img->st = (struct coord){0, 0};
+	img->dr = (struct coord){img->inaltime, img->latime};
 }
 
 static long *frecventa_pixeli(struct imagine *img, struct coord st,
@@ -232,8 +229,8 @@ static long *frecventa_pixeli(struct imagine *img, struct coord st,
 
 	int nr_valori = (int)img->val_max + 1;
 	long val_per_interv = nr_valori / nr_interv + (nr_valori % nr_interv != 0);
-	for (long i = st.y; i < dr.y; ++i) {
-		for (long j = st.x; j < dr.x; ++j)
+	for (long i = st.i; i < dr.i; ++i) {
+		for (long j = st.j; j < dr.j; ++j)
 			++frecv_pixeli[img->pixeli[i][j].val / val_per_interv];
 	}
 

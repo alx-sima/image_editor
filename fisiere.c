@@ -99,8 +99,8 @@ struct imagine *incarcare_fisier()
 	img->pixeli = aloca_matrice_pixeli(inaltime, latime);
 	img->val_max = val_max;
 	img->color = color;
-	img->st = (struct coord){.x = 0, .y = 0};
-	img->dr = (struct coord){.x = latime, .y = inaltime};
+	img->st = (struct coord){0, 0};
+	img->dr = (struct coord){inaltime, latime};
 	img->inaltime = inaltime;
 	img->latime = latime;
 
@@ -166,8 +166,8 @@ void salvare_imagine(struct imagine img)
 				else
 					fprintf(f, "%hhu", p.val);
 
-				//if (j != img.latime - 1)
-					//fprintf(f, " ");
+				// if (j != img.latime - 1)
+				// fprintf(f, " ");
 			} else {
 				if (img.color)
 					fwrite(&p.culoare, sizeof(unsigned char), 3, f);
