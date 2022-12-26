@@ -13,4 +13,6 @@ void histograma(struct imagine *img);
 
 void egalizare(struct imagine *img);
 
+void aplica(struct imagine *img);
+
 #endif // _OPERATII_H

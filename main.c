@@ -43,7 +43,7 @@ void citire_comenzi()
 		} else if (!strcmp(comanda, "CROP")) {
 			img = decupare_imagine(img);
 		} else if (!strcmp(comanda, "APPLY")) {
-			// TODO
+			aplica(img);
 		} else if (!strcmp(comanda, "SAVE")) {
 			if (img)
 				salvare_imagine(*img);

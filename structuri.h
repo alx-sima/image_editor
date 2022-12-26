@@ -1,12 +1,14 @@
 #ifndef _STRUCTURI_H
 #define _STRUCTURI_H
 
+struct clr {
+	unsigned char r;
+	unsigned char g;
+	unsigned char b;
+};
+
 union pixel {
-	struct {
-		unsigned char r;
-		unsigned char g;
-		unsigned char b;
-	} culoare;
+	struct clr culoare;
 	unsigned char val;
 };
 

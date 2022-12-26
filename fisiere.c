@@ -108,9 +108,12 @@ struct imagine *incarcare_fisier()
 		for (long j = 0; j < latime; ++j) {
 			union pixel *p = &img->pixeli[i][j];
 			if (color) {
-				p->culoare.r = a[i * latime + j * octeti_per_pixel];
-				p->culoare.g = a[i * latime + j * octeti_per_pixel + 1];
-				p->culoare.b = a[i * latime + j * octeti_per_pixel + 2];
+				p->culoare.r =
+					a[i * latime * octeti_per_pixel + j * octeti_per_pixel];
+				p->culoare.g =
+					a[i * latime * octeti_per_pixel + j * octeti_per_pixel + 1];
+				p->culoare.b =
+					a[i * latime * octeti_per_pixel + j * octeti_per_pixel + 2];
 			} else {
 				p->val = a[i * latime + j];
 			}
@@ -158,13 +161,13 @@ void salvare_imagine(struct imagine img)
 			union pixel p = img.pixeli[i][j];
 			if (format < 4) {
 				if (img.color)
-					fprintf(f, "%d %d %d", p.culoare.r, p.culoare.g,
+					fprintf(f, "%hhu\n%hhu\n%hhu\n", p.culoare.r, p.culoare.g,
 							p.culoare.b);
 				else
-					fprintf(f, "%d", p.val);
+					fprintf(f, "%hhu", p.val);
 
-				if (j != img.latime - 1)
-					fprintf(f, " ");
+				//if (j != img.latime - 1)
+					//fprintf(f, " ");
 			} else {
 				if (img.color)
 					fwrite(&p.culoare, sizeof(unsigned char), 3, f);

@@ -8,11 +8,17 @@
 #include "alocari.h"
 #include "operatii.h"
 
+// Dimensiunea nucleului pentru filtrele aplicate
+#define DIM_KER 3
+
 static void ordoneaza(long *a, long *b);
 static void selectare_tot(struct imagine *img);
 static long *frecventa_pixeli(struct imagine *img, struct coord st,
 							  struct coord dr, int nr_interv);
 static unsigned char restrange(double x, unsigned char max);
+
+static int in_poza(struct imagine *img, long i, long j);
+static int filtru(struct imagine *img, const double nucleu[DIM_KER][DIM_KER]);
 
 void selectare_suprafata(struct imagine *img)
 {
@@ -147,6 +153,56 @@ void egalizare(struct imagine *img)
 	free(frecv);
 }
 
+void aplica(struct imagine *img)
+{
+	if (!img) {
+		printf("No image loaded\n");
+		return;
+	}
+
+	if (!img->color) {
+		printf("Easy, Charlie Chaplin\n");
+		return;
+	}
+
+	char *efect = strtok(NULL, "");
+
+	if (!strcmp(efect, "EDGE")) {
+		const double nucleu[DIM_KER][DIM_KER] = {
+			{-1, -1, -1},
+			{-1, +8, -1},
+			{-1, -1, -1},
+		};
+		filtru(img, nucleu);
+	} else if (!strcmp(efect, "SHARPEN")) {
+		const double nucleu[DIM_KER][DIM_KER] = {
+			{ 0, -1,	0},
+			{-1, +5, -1},
+			{ 0, -1,	0},
+		};
+		filtru(img, nucleu);
+	} else if (!strcmp(efect, "BLUR")) {
+		const double nucleu[DIM_KER][DIM_KER] = {
+			{1.0 / 9, 1.0 / 9, 1.0 / 9},
+			{1.0 / 9, 1.0 / 9, 1.0 / 9},
+			{1.0 / 9, 1.0 / 9, 1.0 / 9},
+		};
+		filtru(img, nucleu);
+	} else if (!strcmp(efect, "GAUSSIAN_BLUR")) {
+		const double nucleu[DIM_KER][DIM_KER] = {
+			{1.0 / 16, 2.0 / 16, 1.0 / 16},
+			{2.0 / 16, 4.0 / 16, 2.0 / 16},
+			{1.0 / 16, 2.0 / 16, 1.0 / 16},
+		};
+		filtru(img, nucleu);
+	} else {
+		printf("APPLY parameter invalid\n");
+		return;
+	}
+
+	printf("APPLY %s done\n", efect);
+}
+
 static void ordoneaza(long *a, long *b)
 {
 	if (a > b) {
@@ -192,4 +248,46 @@ static unsigned char restrange(double x, unsigned char max)
 	if (x > max)
 		return max;
 	return (unsigned char)x;
+}
+
+static int in_poza(struct imagine *img, long i, long j)
+{
+	return i > 0 && j > 0 && i < img->inaltime && j < img->latime;
+}
+
+static int filtru(struct imagine *img, const double nucleu[3][3])
+{
+	union pixel **rez = aloca_matrice_pixeli(img->inaltime, img->latime);
+	if (!rez)
+		return 1;
+
+	for (long i = 0; i < img->inaltime; ++i) {
+		for (long j = 0; j < img->latime; ++j) {
+			double suma_r = 0.0;
+			double suma_g = 0.0;
+			double suma_b = 0.0;
+
+			for (int k = 0; k < 3; ++k) {
+				for (int l = 0; l < 3; ++l) {
+					if (!in_poza(img, i + k - 1, j + l - 1))
+						continue;
+
+					union pixel p = img->pixeli[i + k - 1][j + l - 1];
+					suma_r += p.culoare.r * nucleu[k][l];
+					suma_g += p.culoare.g * nucleu[k][l];
+					suma_b += p.culoare.b * nucleu[k][l];
+				}
+			}
+
+			rez[i][j].culoare = (struct clr){
+				restrange(suma_r, img->val_max),
+				restrange(suma_g, img->val_max),
+				restrange(suma_b, img->val_max),
+			};
+		}
+	}
+
+	free(img->pixeli);
+	img->pixeli = rez;
+	return 0;
 }
