@@ -7,6 +7,8 @@
 
 void eliberare_imagine(struct imagine *img);
 
+void eliberare_matrice_pixeli(union pixel **mat, long n);
+
 union pixel **aloca_matrice_pixeli(long n, long m);
 
 #endif

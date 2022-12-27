@@ -39,7 +39,7 @@ void citire_comenzi()
 		} else if (!strcmp(comanda, "EQUALIZE")) {
 			egalizare(img);
 		} else if (!strcmp(comanda, "ROTATE")) {
-			// TODO
+			rotire(img);
 		} else if (!strcmp(comanda, "CROP")) {
 			img = decupare_imagine(img);
 		} else if (!strcmp(comanda, "APPLY")) {

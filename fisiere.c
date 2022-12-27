@@ -161,13 +161,13 @@ void salvare_imagine(struct imagine img)
 			union pixel p = img.pixeli[i][j];
 			if (format < 4) {
 				if (img.color)
-					fprintf(f, "%hhu\n%hhu\n%hhu\n", p.culoare.r, p.culoare.g,
+					fprintf(f, "%hhu %hhu %hhu", p.culoare.r, p.culoare.g,
 							p.culoare.b);
 				else
 					fprintf(f, "%hhu", p.val);
 
-				// if (j != img.latime - 1)
-				// fprintf(f, " ");
+				if (j != img.latime - 1)
+					fprintf(f, " ");
 			} else {
 				if (img.color)
 					fwrite(&p.culoare, sizeof(unsigned char), 3, f);

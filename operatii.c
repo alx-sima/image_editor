@@ -203,6 +203,100 @@ void aplica(struct imagine *img)
 	printf("APPLY %s done\n", efect);
 }
 
+void rotire_indici(struct coord src, struct coord *dest, struct coord dim,
+				   int unghi)
+{
+
+	if (unghi < 0)
+		unghi += 360;
+
+	// (i, j) ajunge, dupa rotire, la:
+	// (m - j, i)		- 90
+	// (n - i, m - j) 	- 180
+	// (j, n - i) 		- 270
+	switch (unghi) {
+	case 90:
+		dest->i = dim.j - src.j - 1;
+		dest->j = src.i;
+		break;
+	case 180:
+		dest->i = dim.i - src.i - 1;
+		dest->j = dim.j - src.j - 1;
+		break;
+	case 270:
+		dest->i = src.j;
+		dest->j = dim.i - src.i - 1;
+		break;
+	}
+}
+
+void rotire(struct imagine *img)
+{
+	if (!img) {
+		printf("No image loaded!\n");
+		return;
+	}
+
+	char *argumente = strtok(NULL, "");
+	int unghi;
+	if (sscanf(argumente, "%d", &unghi) != 1) {
+		printf("Unsupported rotation angle\n");
+		return;
+	}
+
+	if (unghi == 0 || unghi > 360 || unghi < -360 || unghi % 90 != 0) {
+		printf("Unsupported rotation angle\n");
+		return;
+	}
+
+	long inaltime = img->dr.i - img->st.i;
+	long latime = img->dr.j - img->st.j;
+	long inaltime_rez = inaltime;
+	long latime_rez = latime;
+
+	if (inaltime == img->inaltime && latime == img->latime) {
+		if (unghi % 180 != 0) {
+			inaltime_rez = latime;
+			latime_rez = inaltime;
+		}
+	} else if (latime != inaltime) {
+		printf("The selection must be square\n");
+		return;
+	}
+
+	union pixel **img_aux = aloca_matrice_pixeli(inaltime_rez, latime_rez);
+	if (!img_aux) {
+		fprintf(stderr, "malloc() failed\n");
+		eliberare_imagine(img);
+		exit(EXIT_FAILURE);
+	}
+
+	for (long i = 0; i < inaltime_rez; ++i) {
+		for (long j = 0; j < latime_rez; ++j) {
+			struct coord dest = {0, 0};
+			rotire_indici((struct coord){i, j}, &dest,
+						  (struct coord){inaltime_rez, latime_rez}, unghi);
+			img_aux[i][j] = img->pixeli[img->st.i + dest.i][img->st.j + dest.j];
+		}
+	}
+
+	if (inaltime == img->inaltime && latime == img->latime) {
+		eliberare_matrice_pixeli(img->pixeli, inaltime);
+		img->pixeli = img_aux;
+
+		img->inaltime = inaltime_rez;
+		img->latime = latime_rez;
+	} else {
+		for (long i = 0; i < latime; ++i) {
+			for (long j = 0; j < latime; ++j)
+				img->pixeli[img->st.i + i][img->st.j + j] = img_aux[i][j];
+		}
+		eliberare_matrice_pixeli(img_aux, inaltime_rez);
+	}
+
+	printf("Rotated %d\n", unghi);
+}
+
 static void ordoneaza(long *a, long *b)
 {
 	if (a > b) {
@@ -252,7 +346,7 @@ static int in_poza(struct imagine *img, long i, long j)
 	return i > 0 && j > 0 && i < img->inaltime && j < img->latime;
 }
 
-static int filtru(struct imagine *img, const double nucleu[3][3])
+static int filtru(struct imagine *img, const double nucleu[DIM_KER][DIM_KER])
 {
 	union pixel **rez = aloca_matrice_pixeli(img->inaltime, img->latime);
 	if (!rez)
@@ -284,7 +378,7 @@ static int filtru(struct imagine *img, const double nucleu[3][3])
 		}
 	}
 
-	free(img->pixeli);
+	eliberare_matrice_pixeli(img->pixeli, img->inaltime);
 	img->pixeli = rez;
 	return 0;
 }
