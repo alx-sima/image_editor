@@ -12,12 +12,14 @@
 #define DIM_KER 3
 
 static void ordoneaza(long *a, long *b);
+
 static void selectare_tot(struct imagine *img);
+
 static long *frecventa_pixeli(struct imagine *img, struct coord st,
 							  struct coord dr, int nr_interv);
+
 static unsigned char restrange(double x, unsigned char max);
 
-static int in_poza(struct imagine *img, long i, long j);
 static int filtru(struct imagine *img, const double nucleu[DIM_KER][DIM_KER]);
 
 void selectare_suprafata(struct imagine *img)
@@ -341,9 +343,9 @@ static unsigned char restrange(double x, unsigned char max)
 	return (unsigned char)x;
 }
 
-static int in_poza(struct imagine *img, long i, long j)
+static int in_selectie(long poz, long st, long dr, long n)
 {
-	return i > 0 && j > 0 && i < img->inaltime && j < img->latime;
+	return poz > 0 && poz < n - 1 && poz > st && poz < dr;
 }
 
 static int filtru(struct imagine *img, const double nucleu[DIM_KER][DIM_KER])
@@ -358,23 +360,25 @@ static int filtru(struct imagine *img, const double nucleu[DIM_KER][DIM_KER])
 			double suma_g = 0.0;
 			double suma_b = 0.0;
 
-			for (int k = 0; k < 3; ++k) {
-				for (int l = 0; l < 3; ++l) {
-					if (!in_poza(img, i + k - 1, j + l - 1))
-						continue;
-
-					union pixel p = img->pixeli[i + k - 1][j + l - 1];
-					suma_r += p.culoare.r * nucleu[k][l];
-					suma_g += p.culoare.g * nucleu[k][l];
-					suma_b += p.culoare.b * nucleu[k][l];
+			if (in_selectie(i, img->st.i, img->dr.i, img->inaltime) &&
+				in_selectie(j, img->st.j, img->dr.j, img->latime)) {
+				for (int k = 0; k < 3; ++k) {
+					for (int l = 0; l < 3; ++l) {
+						union pixel p = img->pixeli[i + k - 1][j + l - 1];
+						suma_r += p.culoare.r * nucleu[k][l];
+						suma_g += p.culoare.g * nucleu[k][l];
+						suma_b += p.culoare.b * nucleu[k][l];
+					}
 				}
-			}
 
-			rez[i][j].culoare = (struct clr){
-				restrange(suma_r, img->val_max),
-				restrange(suma_g, img->val_max),
-				restrange(suma_b, img->val_max),
-			};
+				rez[i][j].culoare = (struct clr){
+					restrange(suma_r, img->val_max),
+					restrange(suma_g, img->val_max),
+					restrange(suma_b, img->val_max),
+				};
+			} else {
+				rez[i][j] = img->pixeli[i][j];
+			}
 		}
 	}
 
