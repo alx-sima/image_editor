@@ -51,13 +51,11 @@ char *citire_linie(FILE *stream)
 	return NULL;
 }
 
-struct imagine *incarcare_fisier()
+struct imagine *incarcare_fisier(char *nume_fisier)
 {
-	char *nume = strtok(NULL, "");
-
-	FILE *f = fopen(nume, "r");
+	FILE *f = fopen(nume_fisier, "r");
 	if (!f) {
-		printf("Failed to load %s\n", nume);
+		printf("Failed to load %s\n", nume_fisier);
 		return NULL;
 	}
 
@@ -119,19 +117,20 @@ struct imagine *incarcare_fisier()
 			}
 		}
 	}
-	printf("Loaded %s\n", nume);
+	printf("Loaded %s\n", nume_fisier);
 
 	free(a);
 	fclose(f);
 	return img;
 }
 
-void salvare_imagine(struct imagine img)
+void salvare_imagine(struct imagine img, char *argumente)
 {
-	char *nume_fisier = strtok(NULL, " ");
-	if (!nume_fisier) {
-		// TODO
+	if (!argumente) {
+		printf("Invalid command\n");
+		return;
 	}
+	char *nume_fisier = strtok(argumente, " ");
 
 	FILE *f = fopen(nume_fisier, "w");
 	if (!f) {

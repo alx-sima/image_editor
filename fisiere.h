@@ -11,8 +11,8 @@
 // Intoarce NULL daca citirea nu s-a putut efectua.
 char *citire_linie(FILE *);
 
-struct imagine *incarcare_fisier();
+struct imagine *incarcare_fisier(char *nume_fisier);
 
-void salvare_imagine(struct imagine img);
+void salvare_imagine(struct imagine img, char *argumente);
 
 #endif // _FISIERE_H

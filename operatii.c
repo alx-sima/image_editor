@@ -20,25 +20,29 @@ static long *frecventa_pixeli(struct imagine *img, struct coord st,
 
 static unsigned char restrange(double x, unsigned char max);
 
-static int filtru(struct imagine *img, const double nucleu[DIM_KER][DIM_KER]);
+static int aplicare_nucleu(struct imagine *img,
+						   const double nucleu[DIM_KER][DIM_KER]);
 
-void selectare_suprafata(struct imagine *img)
+void selectare_suprafata(struct imagine *img, char *argumente)
 {
 	if (!img) {
 		printf("No image loaded\n");
 		return;
 	}
 
-	long x1, x2, y1, y2;
-	// Ia restul randului.
-	char *selectie = strtok(NULL, "");
+	if (!argumente) {
+		printf("Invalid command\n");
+		return;
+	}
 
-	if (!strcmp(selectie, "ALL")) {
+	long x1, x2, y1, y2;
+
+	if (!strcmp(argumente, "ALL")) {
 		selectare_tot(img);
 		printf("Selected 0 0 %ld %ld\n", img->latime, img->inaltime);
 		return;
 	}
-	if (sscanf(selectie, " %ld %ld %ld %ld", &x1, &y1, &x2, &y2) != 4) {
+	if (sscanf(argumente, " %ld %ld %ld %ld", &x1, &y1, &x2, &y2) != 4) {
 		printf("Invalid coordinates\n");
 		return;
 	}
@@ -87,10 +91,14 @@ struct imagine *decupare_imagine(struct imagine *img)
 	return subimg;
 }
 
-void histograma(struct imagine *img)
+void histograma(struct imagine *img, char *argumente)
 {
 	if (!img) {
 		printf("No image loaded\n");
+		return;
+	}
+	if (!argumente) {
+		printf("Invalid command\n");
 		return;
 	}
 	if (img->color) {
@@ -98,7 +106,6 @@ void histograma(struct imagine *img)
 		return;
 	}
 
-	char *argumente = strtok(NULL, "");
 	long x, y;
 	sscanf(argumente, " %ld %ld", &x, &y);
 
@@ -155,19 +162,20 @@ void egalizare(struct imagine *img)
 	free(frecv);
 }
 
-void aplica(struct imagine *img)
+void aplica(struct imagine *img, char *efect)
 {
 	if (!img) {
 		printf("No image loaded\n");
 		return;
 	}
-
 	if (!img->color) {
 		printf("Easy, Charlie Chaplin\n");
 		return;
 	}
-
-	char *efect = strtok(NULL, "");
+	if (!efect) {
+		printf("Invalid command\n");
+		return;
+	}
 
 	if (!strcmp(efect, "EDGE")) {
 		const double nucleu[DIM_KER][DIM_KER] = {
@@ -175,28 +183,28 @@ void aplica(struct imagine *img)
 			{-1, +8, -1},
 			{-1, -1, -1},
 		};
-		filtru(img, nucleu);
+		aplicare_nucleu(img, nucleu);
 	} else if (!strcmp(efect, "SHARPEN")) {
 		const double nucleu[DIM_KER][DIM_KER] = {
 			{ 0, -1,	0},
 			{-1, +5, -1},
 			{ 0, -1,	0},
 		};
-		filtru(img, nucleu);
+		aplicare_nucleu(img, nucleu);
 	} else if (!strcmp(efect, "BLUR")) {
 		const double nucleu[DIM_KER][DIM_KER] = {
 			{1.0 / 9, 1.0 / 9, 1.0 / 9},
 			{1.0 / 9, 1.0 / 9, 1.0 / 9},
 			{1.0 / 9, 1.0 / 9, 1.0 / 9},
 		};
-		filtru(img, nucleu);
+		aplicare_nucleu(img, nucleu);
 	} else if (!strcmp(efect, "GAUSSIAN_BLUR")) {
 		const double nucleu[DIM_KER][DIM_KER] = {
 			{1.0 / 16, 2.0 / 16, 1.0 / 16},
 			{2.0 / 16, 4.0 / 16, 2.0 / 16},
 			{1.0 / 16, 2.0 / 16, 1.0 / 16},
 		};
-		filtru(img, nucleu);
+		aplicare_nucleu(img, nucleu);
 	} else {
 		printf("APPLY parameter invalid\n");
 		return;
@@ -205,8 +213,8 @@ void aplica(struct imagine *img)
 	printf("APPLY %s done\n", efect);
 }
 
-void rotire_indici(struct coord src, struct coord *dest, struct coord dim,
-				   int unghi)
+static void rotire_indici(struct coord src, struct coord *dest,
+						  struct coord dim, int unghi)
 {
 
 	if (unghi < 0)
@@ -232,16 +240,15 @@ void rotire_indici(struct coord src, struct coord *dest, struct coord dim,
 	}
 }
 
-void rotire(struct imagine *img)
+void rotire(struct imagine *img, char *argument)
 {
 	if (!img) {
 		printf("No image loaded!\n");
 		return;
 	}
 
-	char *argumente = strtok(NULL, "");
 	int unghi;
-	if (sscanf(argumente, "%d", &unghi) != 1) {
+	if (sscanf(argument, "%d", &unghi) != 1) {
 		printf("Unsupported rotation angle\n");
 		return;
 	}
@@ -345,10 +352,11 @@ static unsigned char restrange(double x, unsigned char max)
 
 static int in_selectie(long poz, long st, long dr, long n)
 {
-	return poz > 0 && poz < n - 1 && poz > st && poz < dr;
+	return poz > 0 && poz < n - 1 && poz >= st && poz < dr;
 }
 
-static int filtru(struct imagine *img, const double nucleu[DIM_KER][DIM_KER])
+static int aplicare_nucleu(struct imagine *img,
+						   const double nucleu[DIM_KER][DIM_KER])
 {
 	union pixel **rez = aloca_matrice_pixeli(img->inaltime, img->latime);
 	if (!rez)
