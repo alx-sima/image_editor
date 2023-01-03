@@ -26,12 +26,12 @@ static int aplicare_nucleu(struct imagine *img,
 void selectare_suprafata(struct imagine *img, char *argumente)
 {
 	if (!img) {
-		printf("No image loaded\n");
+		puts("No image loaded");
 		return;
 	}
 
 	if (!argumente) {
-		printf("Invalid command\n");
+		puts("Invalid command");
 		return;
 	}
 
@@ -43,7 +43,7 @@ void selectare_suprafata(struct imagine *img, char *argumente)
 		return;
 	}
 	if (sscanf(argumente, " %ld %ld %ld %ld", &x1, &y1, &x2, &y2) != 4) {
-		printf("Invalid coordinates\n");
+		puts("Invalid coordinates");
 		return;
 	}
 
@@ -51,7 +51,7 @@ void selectare_suprafata(struct imagine *img, char *argumente)
 	ordoneaza(&y1, &y2);
 
 	if (x1 < 0 || x2 > img->latime || y1 < 0 || y1 > img->inaltime) {
-		printf("Invalid coordinates\n");
+		puts("Invalid coordinates");
 		return;
 	}
 
@@ -63,7 +63,7 @@ void selectare_suprafata(struct imagine *img, char *argumente)
 struct imagine *decupare_imagine(struct imagine *img)
 {
 	if (!img) {
-		printf("No image loaded\n");
+		puts("No image loaded");
 		return NULL;
 	}
 
@@ -86,7 +86,7 @@ struct imagine *decupare_imagine(struct imagine *img)
 	}
 	selectare_tot(subimg);
 
-	printf("Image cropped\n");
+	puts("Image cropped");
 	eliberare_imagine(img);
 	return subimg;
 }
@@ -94,15 +94,15 @@ struct imagine *decupare_imagine(struct imagine *img)
 void histograma(struct imagine *img, char *argumente)
 {
 	if (!img) {
-		printf("No image loaded\n");
+		puts("No image loaded");
 		return;
 	}
 	if (!argumente) {
-		printf("Invalid command\n");
+		puts("Invalid command");
 		return;
 	}
 	if (img->color) {
-		printf("Black and white image needed\n");
+		puts("Black and white image needed");
 		return;
 	}
 
@@ -135,7 +135,7 @@ void histograma(struct imagine *img, char *argumente)
 void egalizare(struct imagine *img)
 {
 	if (!img) {
-		printf("No image loaded\n");
+		puts("No image loaded");
 		return;
 	}
 
@@ -165,15 +165,15 @@ void egalizare(struct imagine *img)
 void aplica(struct imagine *img, char *efect)
 {
 	if (!img) {
-		printf("No image loaded\n");
+		puts("No image loaded");
 		return;
 	}
 	if (!img->color) {
-		printf("Easy, Charlie Chaplin\n");
+		puts("Easy, Charlie Chaplin");
 		return;
 	}
 	if (!efect) {
-		printf("Invalid command\n");
+		puts("Invalid command");
 		return;
 	}
 
@@ -206,7 +206,7 @@ void aplica(struct imagine *img, char *efect)
 		};
 		aplicare_nucleu(img, nucleu);
 	} else {
-		printf("APPLY parameter invalid\n");
+		puts("APPLY parameter invalid");
 		return;
 	}
 
@@ -243,18 +243,18 @@ static void rotire_indici(struct coord src, struct coord *dest,
 void rotire(struct imagine *img, char *argument)
 {
 	if (!img) {
-		printf("No image loaded!\n");
+		puts("No image loaded!");
 		return;
 	}
 
 	int unghi;
 	if (sscanf(argument, "%d", &unghi) != 1) {
-		printf("Unsupported rotation angle\n");
+		puts("Unsupported rotation angle");
 		return;
 	}
 
 	if (unghi == 0 || unghi > 360 || unghi < -360 || unghi % 90 != 0) {
-		printf("Unsupported rotation angle\n");
+		puts("Unsupported rotation angle");
 		return;
 	}
 
@@ -269,13 +269,13 @@ void rotire(struct imagine *img, char *argument)
 			latime_rez = inaltime;
 		}
 	} else if (latime != inaltime) {
-		printf("The selection must be square\n");
+		puts("The selection must be square");
 		return;
 	}
 
 	union pixel **img_aux = aloca_matrice_pixeli(inaltime_rez, latime_rez);
 	if (!img_aux) {
-		fprintf(stderr, "malloc() failed\n");
+		fputs("malloc() failed", stderr);
 		eliberare_imagine(img);
 		exit(EXIT_FAILURE);
 	}

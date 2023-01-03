@@ -127,7 +127,7 @@ struct imagine *incarcare_fisier(char *nume_fisier)
 void salvare_imagine(struct imagine img, char *argumente)
 {
 	if (!argumente) {
-		printf("Invalid command\n");
+		puts("Invalid command");
 		return;
 	}
 	char *nume_fisier = strtok(argumente, " ");
@@ -166,7 +166,7 @@ void salvare_imagine(struct imagine img, char *argumente)
 					fprintf(f, "%hhu", p.val);
 
 				if (j != img.latime - 1)
-					fprintf(f, " ");
+					fputc(' ', f);
 			} else {
 				if (img.color)
 					fwrite(&p.culoare, sizeof(unsigned char), 3, f);
@@ -175,7 +175,7 @@ void salvare_imagine(struct imagine img, char *argumente)
 			}
 		}
 		if (format < 4)
-			fprintf(f, "\n");
+			fputc('\n', f);
 	}
 
 	printf("Saved %s\n", nume_fisier);

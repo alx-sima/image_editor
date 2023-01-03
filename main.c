@@ -9,7 +9,7 @@
 #include "operatii.h"
 #include "structuri.h"
 
-char *test(char *str)
+char *sparge_rand(char *str)
 {
 	char *poz_spatiu = strchr(str, ' ');
 	if (!poz_spatiu)
@@ -31,13 +31,7 @@ void citire_comenzi()
 			return;
 		}
 
-		// char *comanda = strtok(linie, " ");
-		// if (!comanda) {
-		// 	printf("Invalid command\n");
-		// 	free(linie);
-		// 	continue;
-		// }
-		char *argumente = test(comanda);
+		char *argumente = sparge_rand(comanda);
 
 		if (!strcmp(comanda, "LOAD")) {
 			if (img)
@@ -59,16 +53,16 @@ void citire_comenzi()
 			if (img)
 				salvare_imagine(*img, argumente);
 			else
-				printf("No image loaded\n");
+				puts("No image loaded");
 		} else if (!strcmp(comanda, "EXIT")) {
 			if (img) {
 				free(comanda);
 				eliberare_imagine(img);
 				exit(EXIT_SUCCESS);
 			}
-			printf("No image loaded\n");
+			puts("No image loaded");
 		} else {
-			printf("Invalid command\n");
+			puts("Invalid command");
 		}
 
 		free(comanda);
