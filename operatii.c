@@ -23,6 +23,30 @@ static unsigned char restrange(double x, unsigned char max);
 static int aplicare_nucleu(struct imagine *img,
 						   const double nucleu[DIM_KER][DIM_KER]);
 
+#include <stdarg.h>
+
+int citire_numere(char *str, int nr, ...)
+{
+	va_list vargs;
+	va_start(vargs, nr);
+
+	char *final = str;
+	for (int i = 0; i < nr; ++i) {
+		long *adr = va_arg(vargs, long *);
+
+		*adr = strtol(str, &final, 10);
+		if (final == str) {
+			va_end(vargs);
+			return 0;
+		}
+		str = final;
+	}
+
+	va_end(vargs);
+	// Nu mai exista caractere de citit.
+	return *final == '\0';
+}
+
 void selectare_suprafata(struct imagine *img, char *argumente)
 {
 	if (!img) {
@@ -37,13 +61,14 @@ void selectare_suprafata(struct imagine *img, char *argumente)
 
 	long x1, x2, y1, y2;
 
-	if (!strcmp(argumente, "ALL")) {
+	// TODO
+	if (!strncmp(argumente, "ALL", strlen("ALL"))) {
 		selectare_tot(img);
 		puts("Selected ALL");
 		return;
 	}
 	if (sscanf(argumente, " %ld %ld %ld %ld", &x1, &y1, &x2, &y2) != 4) {
-		puts("Invalid set of set of coordinates");
+		puts("Invalid command");
 		return;
 	}
 
@@ -107,26 +132,27 @@ void histograma(struct imagine *img, char *argumente)
 		return;
 	}
 
-	long x, y;
-	if (sscanf(argumente, " %ld %ld", &x, &y) != 2) {
+	long max_stelute, intervale;
+	if (!citire_numere(argumente, 2, &max_stelute, &intervale)) {
+		// if (sscanf(argumente, " %ld %ld", &max_stelute, &intervale) != 2) {
 		puts("Invalid command");
 		return;
 	}
 
-	long *frecv_pixeli = frecventa_pixeli(img, img->st, img->dr, x);
+	long *frecv_pixeli = frecventa_pixeli(img, img->st, img->dr, intervale);
 	if (!frecv_pixeli) {
 		// TODO
 		return;
 	}
 
-	long frecv_max = 0;
-	for (long i = 0; i < x; ++i) {
+	long frecv_max = 1;
+	for (long i = 0; i < intervale; ++i) {
 		if (frecv_pixeli[i] > frecv_max)
 			frecv_max = frecv_pixeli[i];
 	}
 
-	for (int i = 0; i < x; ++i) {
-		long nr_stelute = frecv_pixeli[i] * y / frecv_max;
+	for (int i = 0; i < intervale; ++i) {
+		long nr_stelute = frecv_pixeli[i] * max_stelute / frecv_max;
 		printf("%ld\t|\t", nr_stelute);
 		for (long i = 0; i < nr_stelute; ++i)
 			putchar('*');
@@ -234,6 +260,11 @@ static void rotire_indici(struct coord src, struct coord *dest,
 	// (n - i, m - j)	- 180
 	// (j, n - i)		- 270
 	switch (unghi) {
+	case 0:
+	case 360:
+		dest->i = src.i;
+		dest->j = src.j;
+		break;
 	case 90:
 		dest->i = dim.j - src.j - 1;
 		dest->j = src.i;
@@ -262,7 +293,7 @@ void rotire(struct imagine *img, char *argument)
 		return;
 	}
 
-	if (unghi == 0 || unghi > 360 || unghi < -360 || unghi % 90 != 0) {
+	if (unghi > 360 || unghi < -360 || unghi % 90 != 0) {
 		puts("Unsupported rotation angle");
 		return;
 	}
