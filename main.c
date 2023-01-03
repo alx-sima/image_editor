@@ -8,18 +8,17 @@
 #include "fisiere.h"
 #include "operatii.h"
 #include "structuri.h"
+#include "utilitare.h"
 
-char *sparge_rand(char *str)
+static void citire_comenzi(void);
+
+int main(void)
 {
-	char *poz_spatiu = strchr(str, ' ');
-	if (!poz_spatiu)
-		return NULL;
-
-	*poz_spatiu = '\0';
-	return poz_spatiu + 1;
+	citire_comenzi();
+	return 0;
 }
 
-void citire_comenzi(void)
+static void citire_comenzi(void)
 {
 	struct imagine *img = NULL;
 
@@ -31,7 +30,7 @@ void citire_comenzi(void)
 			return;
 		}
 
-		char *argumente = sparge_rand(comanda);
+		char *argumente = sparge_comanda(comanda);
 
 		if (!strcmp(comanda, "LOAD")) {
 			if (img)
@@ -68,10 +67,4 @@ void citire_comenzi(void)
 
 		free(comanda);
 	}
-}
-
-int main(void)
-{
-	citire_comenzi();
-	return 0;
 }

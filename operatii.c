@@ -7,10 +7,13 @@
 
 #include "alocari.h"
 #include "operatii.h"
+#include "structuri.h"
+#include "utilitare.h"
 
 // Dimensiunea nucleului pentru filtrele aplicate
 #define DIM_KER 3
 
+// Sorteaza in ordine crescatoare valorile de la adresele `a` si `b`.
 static void ordoneaza(long *a, long *b);
 
 static void selectare_tot(struct imagine *img);
@@ -18,34 +21,11 @@ static void selectare_tot(struct imagine *img);
 static long *frecventa_pixeli(struct imagine *img, struct coord st,
 							  struct coord dr, int nr_interv);
 
+// Returneaza cea mai apropiata valoare de `x` din intervalul `[0, max]`.
 static unsigned char restrange(double x, unsigned char max);
 
 static int aplicare_nucleu(struct imagine *img,
 						   const double nucleu[DIM_KER][DIM_KER]);
-
-#include <stdarg.h>
-
-int citire_numere(char *str, int nr, ...)
-{
-	va_list vargs;
-	va_start(vargs, nr);
-
-	char *final = str;
-	for (int i = 0; i < nr; ++i) {
-		long *adr = va_arg(vargs, long *);
-
-		*adr = strtol(str, &final, 10);
-		if (final == str) {
-			va_end(vargs);
-			return 0;
-		}
-		str = final;
-	}
-
-	va_end(vargs);
-	// Nu mai exista caractere de citit.
-	return *final == '\0';
-}
 
 void selectare_suprafata(struct imagine *img, char *argumente)
 {
@@ -67,7 +47,7 @@ void selectare_suprafata(struct imagine *img, char *argumente)
 		puts("Selected ALL");
 		return;
 	}
-	if (sscanf(argumente, " %ld %ld %ld %ld", &x1, &y1, &x2, &y2) != 4) {
+	if (!citire_numere(argumente, 4, &x1, &y1, &x2, &y2)) {
 		puts("Invalid command");
 		return;
 	}
@@ -134,7 +114,6 @@ void histograma(struct imagine *img, char *argumente)
 
 	long max_stelute, intervale;
 	if (!citire_numere(argumente, 2, &max_stelute, &intervale)) {
-		// if (sscanf(argumente, " %ld %ld", &max_stelute, &intervale) != 2) {
 		puts("Invalid command");
 		return;
 	}

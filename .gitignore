@@ -7,24 +7,14 @@
 /input/
 /output/
 /ref/
-/src/
-/target/
 /tasks/
 /tests/
 .check.grade
-Cargo.toml
-Cargo.lock
 check
 image_check
-install.sh
 tests.json
 
 # build artifacts
 image_editor
 vgcore.*
 *.o
-
-# images
-*.jpg
-*.pgm
-*.ppm
