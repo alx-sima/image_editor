@@ -39,19 +39,20 @@ void selectare_suprafata(struct imagine *img, char *argumente)
 
 	if (!strcmp(argumente, "ALL")) {
 		selectare_tot(img);
-		printf("Selected 0 0 %ld %ld\n", img->latime, img->inaltime);
+		puts("Selected ALL");
 		return;
 	}
 	if (sscanf(argumente, " %ld %ld %ld %ld", &x1, &y1, &x2, &y2) != 4) {
-		puts("Invalid coordinates");
+		puts("Invalid set of set of coordinates");
 		return;
 	}
 
 	ordoneaza(&x1, &x2);
 	ordoneaza(&y1, &y2);
 
-	if (x1 < 0 || x2 > img->latime || y1 < 0 || y1 > img->inaltime) {
-		puts("Invalid coordinates");
+	if (x1 < 0 || x2 > img->latime || y1 < 0 || y2 > img->inaltime ||
+		x1 == x2 || y1 == y2) {
+		puts("Invalid set of coordinates");
 		return;
 	}
 
@@ -107,7 +108,10 @@ void histograma(struct imagine *img, char *argumente)
 	}
 
 	long x, y;
-	sscanf(argumente, " %ld %ld", &x, &y);
+	if (sscanf(argumente, " %ld %ld", &x, &y) != 2) {
+		puts("Invalid command");
+		return;
+	}
 
 	long *frecv_pixeli = frecventa_pixeli(img, img->st, img->dr, x);
 	if (!frecv_pixeli) {
@@ -138,6 +142,10 @@ void egalizare(struct imagine *img)
 		puts("No image loaded");
 		return;
 	}
+	if (img->color) {
+		puts("Black and white image needed");
+		return;
+	}
 
 	long suprafata = img->inaltime * img->latime;
 
@@ -159,7 +167,9 @@ void egalizare(struct imagine *img)
 						   img->val_max);
 		}
 	}
+
 	free(frecv);
+	puts("Equalize done");
 }
 
 void aplica(struct imagine *img, char *efect)
@@ -168,26 +178,26 @@ void aplica(struct imagine *img, char *efect)
 		puts("No image loaded");
 		return;
 	}
-	if (!img->color) {
-		puts("Easy, Charlie Chaplin");
-		return;
-	}
 	if (!efect) {
 		puts("Invalid command");
+		return;
+	}
+	if (!img->color) {
+		puts("Easy, Charlie Chaplin");
 		return;
 	}
 
 	if (!strcmp(efect, "EDGE")) {
 		const double nucleu[DIM_KER][DIM_KER] = {
 			{-1, -1, -1},
-			{-1, +8, -1},
+			{-1,	 8, -1},
 			{-1, -1, -1},
 		};
 		aplicare_nucleu(img, nucleu);
 	} else if (!strcmp(efect, "SHARPEN")) {
 		const double nucleu[DIM_KER][DIM_KER] = {
 			{ 0, -1,	0},
-			{-1, +5, -1},
+			{-1,	 5, -1},
 			{ 0, -1,	0},
 		};
 		aplicare_nucleu(img, nucleu);
@@ -216,14 +226,13 @@ void aplica(struct imagine *img, char *efect)
 static void rotire_indici(struct coord src, struct coord *dest,
 						  struct coord dim, int unghi)
 {
-
 	if (unghi < 0)
 		unghi += 360;
 
 	// (i, j) ajunge, dupa rotire, la:
 	// (m - j, i)		- 90
-	// (n - i, m - j) 	- 180
-	// (j, n - i) 		- 270
+	// (n - i, m - j)	- 180
+	// (j, n - i)		- 270
 	switch (unghi) {
 	case 90:
 		dest->i = dim.j - src.j - 1;
@@ -243,7 +252,7 @@ static void rotire_indici(struct coord src, struct coord *dest,
 void rotire(struct imagine *img, char *argument)
 {
 	if (!img) {
-		puts("No image loaded!");
+		puts("No image loaded");
 		return;
 	}
 
@@ -268,7 +277,8 @@ void rotire(struct imagine *img, char *argument)
 			inaltime_rez = latime;
 			latime_rez = inaltime;
 		}
-	} else if (latime != inaltime) {
+		// TODO mai frumos
+	} else if (latime != inaltime && unghi % 180 != 0) {
 		puts("The selection must be square");
 		return;
 	}
@@ -295,6 +305,13 @@ void rotire(struct imagine *img, char *argument)
 
 		img->inaltime = inaltime_rez;
 		img->latime = latime_rez;
+
+		if (unghi % 180 != 0) {
+			// TODO
+			img->dr.i ^= img->dr.j;
+			img->dr.j ^= img->dr.i;
+			img->dr.i ^= img->dr.j;
+		}
 	} else {
 		for (long i = 0; i < latime; ++i) {
 			for (long j = 0; j < latime; ++j)
@@ -308,7 +325,7 @@ void rotire(struct imagine *img, char *argument)
 
 static void ordoneaza(long *a, long *b)
 {
-	if (a > b) {
+	if (*a > *b) {
 		*a ^= *b;
 		*b ^= *a;
 		*a ^= *b;

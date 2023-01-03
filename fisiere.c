@@ -8,7 +8,8 @@
 
 // TODO
 // Returneaza cifra din magic word a formatului.
-static int verif_format(FILE *f);
+static int verif_format(FILE *);
+
 // Returneaza prima linie care nu contine un comentariu (nu incepe cu #).
 static char *omite_comentarii(FILE *f);
 static unsigned char *citeste_valori_ascii(FILE *f, long n);
@@ -44,9 +45,8 @@ char *citire_linie(FILE *stream)
 		}
 	}
 
-	if (feof(stream)) {
+	if (feof(stream))
 		return rez;
-	}
 	free(rez);
 	return NULL;
 }
@@ -133,16 +133,15 @@ void salvare_imagine(struct imagine img, char *argumente)
 	char *nume_fisier = strtok(argumente, " ");
 
 	FILE *f = fopen(nume_fisier, "w");
-	if (!f) {
-		// TODO
-	}
+	// if (!f) {
+	//  TODO
+	//}
 
 	int format = 1;
-	if (img.color) {
+	if (img.color)
 		format = 3;
-	} else if (img.val_max != 1) {
+	else if (img.val_max != 1)
 		format = 2;
-	}
 
 	char *ascii = strtok(NULL, " ");
 	// Daca este prezent cuvantul ascii in comanda,

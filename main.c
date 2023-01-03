@@ -19,7 +19,7 @@ char *sparge_rand(char *str)
 	return poz_spatiu + 1;
 }
 
-void citire_comenzi()
+void citire_comenzi(void)
 {
 	struct imagine *img = NULL;
 
@@ -55,12 +55,13 @@ void citire_comenzi()
 			else
 				puts("No image loaded");
 		} else if (!strcmp(comanda, "EXIT")) {
-			if (img) {
-				free(comanda);
+			if (img)
 				eliberare_imagine(img);
-				exit(EXIT_SUCCESS);
-			}
-			puts("No image loaded");
+			else
+				puts("No image loaded");
+
+			free(comanda);
+			exit(EXIT_SUCCESS);
 		} else {
 			puts("Invalid command");
 		}
