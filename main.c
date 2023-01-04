@@ -10,6 +10,19 @@
 #include "structuri.h"
 #include "utilitare.h"
 
+enum comenzi {
+	LOAD,
+	SELECT,
+	HISTOGRAM,
+	EQUALIZE,
+	ROTATE,
+	CROP,
+	APPLY,
+	SAVE,
+	EXIT,
+	INVALID
+};
+
 static void citire_comenzi(void);
 
 int main(void)
@@ -25,43 +38,60 @@ static void citire_comenzi(void)
 	while (1) {
 		char *comanda = citire_linie(stdin);
 		if (!comanda) {
-			// TODO
 			eliberare_imagine(img);
 			return;
 		}
-
 		char *argumente = sparge_comanda(comanda);
 
-		if (!strcmp(comanda, "LOAD")) {
+		static char *comenzi[] = {
+			"LOAD", "SELECT", "HISTOGRAM", "EQUALIZE", "ROTATE",
+			"CROP", "APPLY",  "SAVE",	   "EXIT",
+		};
+
+		enum comenzi nr_comanda;
+		for (nr_comanda = LOAD; nr_comanda != INVALID; ++nr_comanda) {
+			if (!strcmp(comanda, comenzi[nr_comanda]))
+				break;
+		}
+
+		switch (nr_comanda) {
+		case LOAD:
 			if (img)
 				eliberare_imagine(img);
 			img = incarcare_fisier(argumente);
-		} else if (!strcmp(comanda, "SELECT")) {
+			break;
+		case SELECT:
 			selectare_suprafata(img, argumente);
-		} else if (!strcmp(comanda, "HISTOGRAM")) {
+			break;
+		case HISTOGRAM:
 			histograma(img, argumente);
-		} else if (!strcmp(comanda, "EQUALIZE")) {
+			break;
+		case EQUALIZE:
 			egalizare(img);
-		} else if (!strcmp(comanda, "ROTATE")) {
+			break;
+		case ROTATE:
 			rotire(img, argumente);
-		} else if (!strcmp(comanda, "CROP")) {
+			break;
+		case CROP:
 			img = decupare_imagine(img);
-		} else if (!strcmp(comanda, "APPLY")) {
+			break;
+		case APPLY:
 			aplica(img, argumente);
-		} else if (!strcmp(comanda, "SAVE")) {
+			break;
+		case SAVE:
 			if (img)
 				salvare_imagine(*img, argumente);
 			else
 				puts("No image loaded");
-		} else if (!strcmp(comanda, "EXIT")) {
+			break;
+		case EXIT:
 			if (img)
 				eliberare_imagine(img);
 			else
 				puts("No image loaded");
-
 			free(comanda);
 			exit(EXIT_SUCCESS);
-		} else {
+		default:
 			puts("Invalid command");
 		}
 
