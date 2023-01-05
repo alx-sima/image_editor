@@ -12,13 +12,13 @@
 
 enum comenzi {
 	LOAD,
+	SAVE,
 	SELECT,
+	CROP,
+	ROTATE,
+	APPLY,
 	HISTOGRAM,
 	EQUALIZE,
-	ROTATE,
-	CROP,
-	APPLY,
-	SAVE,
 	EXIT,
 	INVALID
 };
@@ -39,13 +39,14 @@ static void citire_comenzi(void)
 		char *comanda = citire_linie(stdin);
 		if (!comanda) {
 			eliberare_imagine(img);
-			return;
+			fputs("malloc() fail", stderr);
+			exit(EXIT_FAILURE);
 		}
 		char *argumente = sparge_comanda(comanda);
 
-		static char *comenzi[] = {
-			"LOAD", "SELECT", "HISTOGRAM", "EQUALIZE", "ROTATE",
-			"CROP", "APPLY",  "SAVE",	   "EXIT",
+		static const char *const comenzi[] = {
+			"LOAD",	 "SAVE",	  "SELECT",	  "CROP", "ROTATE",
+			"APPLY", "HISTOGRAM", "EQUALIZE", "EXIT",
 		};
 
 		enum comenzi nr_comanda;
@@ -54,29 +55,10 @@ static void citire_comenzi(void)
 				break;
 		}
 
+		int eroare = 0;
 		switch (nr_comanda) {
 		case LOAD:
-			if (img)
-				eliberare_imagine(img);
-			img = incarcare_fisier(argumente);
-			break;
-		case SELECT:
-			selectare_suprafata(img, argumente);
-			break;
-		case HISTOGRAM:
-			histograma(img, argumente);
-			break;
-		case EQUALIZE:
-			egalizare(img);
-			break;
-		case ROTATE:
-			rotire(img, argumente);
-			break;
-		case CROP:
-			img = decupare_imagine(img);
-			break;
-		case APPLY:
-			aplica(img, argumente);
+			eroare = incarcare_fisier(&img, argumente);
 			break;
 		case SAVE:
 			if (img)
@@ -84,17 +66,38 @@ static void citire_comenzi(void)
 			else
 				puts("No image loaded");
 			break;
+		case SELECT:
+			selectare_suprafata(img, argumente);
+			break;
+		case CROP:
+			eroare = decupare_imagine(&img);
+			break;
+		case ROTATE:
+			eroare = rotire_imagine(img, argumente);
+			break;
+		case APPLY:
+			eroare = aplicare_filtru(img, argumente);
+			break;
+		case HISTOGRAM:
+			eroare = afisare_histograma(img, argumente);
+			break;
+		case EQUALIZE:
+			eroare = egalizare_imagine(img);
+			break;
 		case EXIT:
-			if (img)
-				eliberare_imagine(img);
-			else
+			if (!img)
 				puts("No image loaded");
 			free(comanda);
+			eliberare_imagine(img);
 			exit(EXIT_SUCCESS);
 		default:
 			puts("Invalid command");
 		}
 
 		free(comanda);
+		if (eroare) {
+			eliberare_imagine(img);
+			exit(EXIT_FAILURE);
+		}
 	}
 }

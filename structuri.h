@@ -1,10 +1,12 @@
-#ifndef _STRUCTURI_H
-#define _STRUCTURI_H
+// Copyright Sima Alexandru 312CA (2022-2023)
+
+#ifndef STRUCTURI_H
+#define STRUCTURI_H
 
 struct clr {
-	unsigned char r;
-	unsigned char g;
-	unsigned char b;
+	unsigned char rosu;
+	unsigned char verde;
+	unsigned char albastru;
 };
 
 union pixel {
@@ -13,8 +15,8 @@ union pixel {
 };
 
 struct coord {
-	int i;
-	int j;
+	long i;
+	long j;
 };
 
 struct imagine {
@@ -27,4 +29,4 @@ struct imagine {
 	int color;
 };
 
-#endif // _STRUCTURI_H
+#endif // STRUCTURI_H

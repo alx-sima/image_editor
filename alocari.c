@@ -4,20 +4,6 @@
 
 #include "alocari.h"
 
-// TODO
-void eliberare_matrice_pixeli(union pixel **mat, long n)
-{
-	for (long i = 0; i < n; ++i)
-		free(mat[i]);
-	free(mat);
-}
-
-void eliberare_imagine(struct imagine *img)
-{
-	eliberare_matrice_pixeli(img->pixeli, img->inaltime);
-	free(img);
-}
-
 union pixel **aloca_matrice_pixeli(long n, long m)
 {
 	union pixel **mat = (union pixel **)malloc(n * sizeof(union pixel *));
@@ -33,4 +19,19 @@ union pixel **aloca_matrice_pixeli(long n, long m)
 	}
 
 	return mat;
+}
+
+void eliberare_matrice_pixeli(union pixel **mat, long n)
+{
+	for (long i = 0; i < n; ++i)
+		free(mat[i]);
+	free(mat);
+}
+
+void eliberare_imagine(struct imagine *img)
+{
+	if (!img)
+		return;
+	eliberare_matrice_pixeli(img->pixeli, img->inaltime);
+	free(img);
 }

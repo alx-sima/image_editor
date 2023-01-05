@@ -51,12 +51,16 @@ char *citire_linie(FILE *stream)
 	return NULL;
 }
 
-struct imagine *incarcare_fisier(char *nume_fisier)
+int incarcare_fisier(struct imagine **img, char *nume_fisier)
 {
+	if (*img)
+		eliberare_imagine(*img);
+	*img = NULL;
+
 	FILE *f = fopen(nume_fisier, "r");
 	if (!f) {
 		printf("Failed to load %s\n", nume_fisier);
-		return NULL;
+		return 0;
 	}
 
 	int form = verif_format(f);
@@ -89,39 +93,39 @@ struct imagine *incarcare_fisier(char *nume_fisier)
 	else
 		a = citeste_valori_binar(f, inaltime * latime * octeti_per_pixel);
 	if (!a) {
-		// TODO
-		return NULL;
+		fputs("malloc() fail", stderr);
+		return 1;
 	}
 
-	struct imagine *img = (struct imagine *)malloc(sizeof(struct imagine));
-	img->pixeli = aloca_matrice_pixeli(inaltime, latime);
-	img->val_max = val_max;
-	img->color = color;
-	img->st = (struct coord){0, 0};
-	img->dr = (struct coord){inaltime, latime};
-	img->inaltime = inaltime;
-	img->latime = latime;
+	*img = (struct imagine *)malloc(sizeof(struct imagine));
+	(*img)->pixeli = aloca_matrice_pixeli(inaltime, latime);
+	(*img)->val_max = val_max;
+	(*img)->color = color;
+	(*img)->st = (struct coord){0, 0};
+	(*img)->dr = (struct coord){inaltime, latime};
+	(*img)->inaltime = inaltime;
+	(*img)->latime = latime;
 
 	for (long i = 0; i < inaltime; ++i) {
 		for (long j = 0; j < latime; ++j) {
-			union pixel *p = &img->pixeli[i][j];
+			union pixel *p = &(*img)->pixeli[i][j];
 			if (color) {
-				p->culoare.r =
+				p->culoare.rosu =
 					a[i * latime * octeti_per_pixel + j * octeti_per_pixel];
-				p->culoare.g =
+				p->culoare.verde =
 					a[i * latime * octeti_per_pixel + j * octeti_per_pixel + 1];
-				p->culoare.b =
+				p->culoare.albastru =
 					a[i * latime * octeti_per_pixel + j * octeti_per_pixel + 2];
 			} else {
 				p->val = a[i * latime + j];
 			}
 		}
 	}
-	printf("Loaded %s\n", nume_fisier);
 
+	printf("Loaded %s\n", nume_fisier);
 	free(a);
 	fclose(f);
-	return img;
+	return 0;
 }
 
 void salvare_imagine(struct imagine img, char *argumente)
@@ -130,8 +134,8 @@ void salvare_imagine(struct imagine img, char *argumente)
 		puts("Invalid command");
 		return;
 	}
-	char *nume_fisier = strtok(argumente, " ");
 
+	char *nume_fisier = strtok(argumente, " ");
 	FILE *f = fopen(nume_fisier, "w");
 	// if (!f) {
 	//  TODO
@@ -159,8 +163,8 @@ void salvare_imagine(struct imagine img, char *argumente)
 			union pixel p = img.pixeli[i][j];
 			if (format < 4) {
 				if (img.color)
-					fprintf(f, "%hhu %hhu %hhu", p.culoare.r, p.culoare.g,
-							p.culoare.b);
+					fprintf(f, "%hhu %hhu %hhu", p.culoare.rosu,
+							p.culoare.verde, p.culoare.albastru);
 				else
 					fprintf(f, "%hhu", p.val);
 

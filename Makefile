@@ -5,7 +5,7 @@ CFLAGS=-Wall -Wextra -g
 LDLIBS=-lm
 
 SRCS=$(wildcard *.c)
-OBJS=$(patsubst %.c, %.o, $(SRCS))
+OBJS=$(SRCS:%.c=%.o)
 TARGET=image_editor
 
 build: $(TARGET)
