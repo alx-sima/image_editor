@@ -11,6 +11,9 @@
 // perechi.
 void selectare_suprafata(struct imagine *img, char *argumente);
 
+// Selecteaza toata suprafata imaginii.
+void selectare_totala(struct imagine *img);
+
 // Inlocuieste imaginea `*img` cu subimaginea selectata.
 int decupare_imagine(struct imagine **img);
 
@@ -20,16 +23,5 @@ int decupare_imagine(struct imagine **img);
 // de 180, dimensiunile se inverseaza, asa ca selectia trebuie sa fie
 // patratica.
 int rotire_imagine(struct imagine *img, char *argument);
-
-// Aplica filtrul `efect` pe selectia din `img`.
-int aplicare_filtru(struct imagine *img, char *efect);
-
-// Calculeaza si afiseaza histograma imaginii `img`.
-// Numarul de binuri si numarul maxim de stelute pentru
-// reprezentare sunt transmise prin stringul `argumente`.
-int afisare_histograma(struct imagine *img, char *argumente);
-
-// Egalizeaza toata imaginea alb-negru `img`.
-int egalizare_imagine(struct imagine *img);
 
 #endif // OPERATII_H

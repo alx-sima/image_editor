@@ -5,6 +5,8 @@
 
 #include "alocari.h"
 #include "fisiere.h"
+#include "operatii.h"
+#include "utilitare.h"
 
 // TODO
 // Returneaza cifra din magic word a formatului.
@@ -12,42 +14,52 @@ static int verif_format(FILE *);
 
 // Returneaza prima linie care nu contine un comentariu (nu incepe cu #).
 static char *omite_comentarii(FILE *f);
+
+// Aloca un vector in care citeste matricea de valori ascii cu
+// `n` elemente din fisierul `f`.
 static unsigned char *citeste_valori_ascii(FILE *f, long n);
+
+// Aloca un vector in care citeste matricea de valori binare cu
+// `n` elemente din fisierul `f`.
 static unsigned char *citeste_valori_binar(FILE *f, long n);
 
-char *citire_linie(FILE *stream)
+char *citire_linie(FILE *fisier)
 {
 	char buffer[BUFSIZ];
 
 	// Initial se aloca un string "gol" (care contine doar un '\0').
-	char *rez = (char *)calloc(1, sizeof(char));
+	char *linie = (char *)calloc(1, sizeof(char));
 	size_t caract_stocate = 1;
 
-	while (fgets(buffer, BUFSIZ, stream)) {
+	while (fgets(buffer, BUFSIZ, fisier)) {
 		size_t caract_citite = strlen(buffer);
 		caract_stocate += caract_citite;
 
-		char *rez_nou = (char *)realloc(rez, caract_stocate);
-		if (!rez_nou) {
-			free(rez);
+		// Se concateneaza caracterele citite la rezultat.
+		char *temp = (char *)realloc(linie, caract_stocate);
+		if (!temp) {
+			free(linie);
 			return NULL;
 		}
-
-		rez = rez_nou;
-		strncat(rez, buffer, caract_citite);
+		linie = temp;
+		// Se concateneaza caracterele citite in aceasta transa la rezultat.
+		strncat(linie, buffer, caract_citite);
 
 		// Daca ultimul caracter citit este newline,
 		// s-a terminat de citit linia.
-		if (rez[caract_stocate - 2] == '\n') {
+		if (linie[caract_stocate - 2] == '\n') {
 			// Se elimina newline-ul.
-			rez[caract_stocate - 2] = '\0';
-			return (char *)realloc(rez, caract_stocate - 1);
+			linie[caract_stocate - 2] = '\0';
+			return (char *)realloc(linie, caract_stocate - 1);
 		}
 	}
 
-	if (feof(stream))
-		return rez;
-	free(rez);
+	// Ultima linie poate sa nu contina '\n'
+	if (feof(fisier))
+		return linie;
+	// In cazul in care nu s-a putut citi linia,
+	// se elibereaza stringul si se intoarce NULL.
+	free(linie);
 	return NULL;
 }
 
@@ -57,41 +69,41 @@ int incarcare_fisier(struct imagine **img, char *nume_fisier)
 		eliberare_imagine(*img);
 	*img = NULL;
 
-	FILE *f = fopen(nume_fisier, "r");
-	if (!f) {
+	FILE *fisier = fopen(nume_fisier, "r");
+	if (!fisier) {
 		printf("Failed to load %s\n", nume_fisier);
 		return 0;
 	}
 
-	int form = verif_format(f);
-	int ascii = form < 4;
-	int color = form % 3 == 0;
-	// Imaginile color (P3 si P6) folosesc cate
-	// 3 octeti pt un pixel, iar restul cate 1.
+	const int format = verif_format(fisier);
+	// Imaginile in format ascii sunt P1...P3.
+	const int ascii = format < 4;
+	// Imaginile color sunt P3 si P6.
+	const int color = format % 3 == 0;
+	// Imaginile color folosesc cate 3 octeti
+	// pt un pixel, iar restul cate 1.
+	const int octeti_per_pixel = (color ? 3 : 1);
 
-	int octeti_per_pixel = (color ? 3 : 1);
+	char *linie = omite_comentarii(fisier);
 
-	char *linie = omite_comentarii(f);
-
-	// TODO
-	char *end;
-	long latime = strtoll(linie, &end, 10);
-	long inaltime = strtoll(end, NULL, 10);
+	long latime, inaltime;
 	int val_max = 1; // TODO
+	citire_numere(linie, 2, &latime, &inaltime);
 
-	// Imaginile alb-negru nu au si o valoare maxima a culorii.
-	if (form % 3 != 1) {
+	// Imaginile alb-negru (P1 si P4) nu
+	// au si o valoare maxima a culorii.
+	if (format % 3 != 1) {
 		free(linie);
-		linie = omite_comentarii(f);
+		linie = omite_comentarii(fisier);
 		val_max = strtol(linie, NULL, 10);
 	}
 
 	free(linie);
 	unsigned char *a;
 	if (ascii)
-		a = citeste_valori_ascii(f, inaltime * latime * octeti_per_pixel);
+		a = citeste_valori_ascii(fisier, inaltime * latime * octeti_per_pixel);
 	else
-		a = citeste_valori_binar(f, inaltime * latime * octeti_per_pixel);
+		a = citeste_valori_binar(fisier, inaltime * latime * octeti_per_pixel);
 	if (!a) {
 		fputs("malloc() fail", stderr);
 		return 1;
@@ -101,20 +113,19 @@ int incarcare_fisier(struct imagine **img, char *nume_fisier)
 	(*img)->pixeli = aloca_matrice_pixeli(inaltime, latime);
 	(*img)->val_max = val_max;
 	(*img)->color = color;
-	(*img)->st = (struct coord){0, 0};
-	(*img)->dr = (struct coord){inaltime, latime};
 	(*img)->inaltime = inaltime;
 	(*img)->latime = latime;
+	selectare_totala(*img);
 
 	for (long i = 0; i < inaltime; ++i) {
 		for (long j = 0; j < latime; ++j) {
 			union pixel *p = &(*img)->pixeli[i][j];
 			if (color) {
-				p->culoare.rosu =
+				p->clr.rosu =
 					a[i * latime * octeti_per_pixel + j * octeti_per_pixel];
-				p->culoare.verde =
+				p->clr.verde =
 					a[i * latime * octeti_per_pixel + j * octeti_per_pixel + 1];
-				p->culoare.albastru =
+				p->clr.albastru =
 					a[i * latime * octeti_per_pixel + j * octeti_per_pixel + 2];
 			} else {
 				p->val = a[i * latime + j];
@@ -124,12 +135,16 @@ int incarcare_fisier(struct imagine **img, char *nume_fisier)
 
 	printf("Loaded %s\n", nume_fisier);
 	free(a);
-	fclose(f);
+	fclose(fisier);
 	return 0;
 }
 
-void salvare_imagine(struct imagine img, char *argumente)
+void salvare_imagine(struct imagine *img, char *argumente)
 {
+	if (!img) {
+		puts("No image loaded");
+		return;
+	}
 	if (!argumente) {
 		puts("Invalid command");
 		return;
@@ -137,14 +152,15 @@ void salvare_imagine(struct imagine img, char *argumente)
 
 	char *nume_fisier = strtok(argumente, " ");
 	FILE *f = fopen(nume_fisier, "w");
-	// if (!f) {
-	//  TODO
-	//}
+	if (!f) {
+		fprintf(stderr, "Cannot write to output file %s\n", nume_fisier);
+		return;
+	}
 
 	int format = 1;
-	if (img.color)
+	if (img->color)
 		format = 3;
-	else if (img.val_max != 1)
+	else if (img->val_max != 1)
 		format = 2;
 
 	char *ascii = strtok(NULL, " ");
@@ -154,25 +170,27 @@ void salvare_imagine(struct imagine img, char *argumente)
 		format += 3;
 
 	fprintf(f, "P%d\n", format);
-	fprintf(f, "%lu %lu\n", img.latime, img.inaltime);
+	fprintf(f, "%lu %lu\n", img->latime, img->inaltime);
+	// Imaginile alb-negru (P1 si P4) nu
+	// au si o valoare maxima a culorii.
 	if (format % 3 != 1)
-		fprintf(f, "%d\n", img.val_max);
+		fprintf(f, "%d\n", img->val_max);
 
-	for (long i = 0; i < img.inaltime; ++i) {
-		for (long j = 0; j < img.latime; ++j) {
-			union pixel p = img.pixeli[i][j];
+	for (long i = 0; i < img->inaltime; ++i) {
+		for (long j = 0; j < img->latime; ++j) {
+			union pixel p = img->pixeli[i][j];
 			if (format < 4) {
-				if (img.color)
-					fprintf(f, "%hhu %hhu %hhu", p.culoare.rosu,
-							p.culoare.verde, p.culoare.albastru);
+				if (img->color)
+					fprintf(f, "%hhu %hhu %hhu", p.clr.rosu, p.clr.verde,
+							p.clr.albastru);
 				else
 					fprintf(f, "%hhu", p.val);
 
-				if (j != img.latime - 1)
+				if (j != img->latime - 1)
 					fputc(' ', f);
 			} else {
-				if (img.color)
-					fwrite(&p.culoare, sizeof(unsigned char), 3, f);
+				if (img->color)
+					fwrite(&p.clr, sizeof(unsigned char), 3, f);
 				else
 					fwrite(&p.val, sizeof(unsigned char), 1, f);
 			}
@@ -240,6 +258,5 @@ static unsigned char *citeste_valori_binar(FILE *f, long n)
 		return NULL;
 
 	fread(v, sizeof(unsigned char), n, f);
-
 	return v;
 }

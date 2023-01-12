@@ -5,11 +5,14 @@
 #include <string.h>
 
 #include "alocari.h"
+#include "filtre.h"
 #include "fisiere.h"
+#include "histograme.h"
 #include "operatii.h"
 #include "structuri.h"
 #include "utilitare.h"
 
+// Comenzile disponibile
 enum comenzi {
 	LOAD,
 	SAVE,
@@ -23,12 +26,31 @@ enum comenzi {
 	INVALID
 };
 
+// Returneaza enumul corespunzator comenzii din `comanda`.
+static enum comenzi potrivire_comanda(const char *comanda);
+
+// Bucla principala a programului in care se citesc si se executa comenzile.
 static void citire_comenzi(void);
 
 int main(void)
 {
 	citire_comenzi();
 	return 0;
+}
+
+static enum comenzi potrivire_comanda(const char *comanda)
+{
+	static const char *const comenzi[] = {
+		"LOAD",	 "SAVE",	  "SELECT",	  "CROP", "ROTATE",
+		"APPLY", "HISTOGRAM", "EQUALIZE", "EXIT",
+	};
+
+	for (enum comenzi nr_comanda = LOAD; nr_comanda != INVALID; ++nr_comanda) {
+		if (!strcmp(comanda, comenzi[nr_comanda]))
+			return nr_comanda;
+	}
+
+	return INVALID;
 }
 
 static void citire_comenzi(void)
@@ -44,27 +66,14 @@ static void citire_comenzi(void)
 		}
 		char *argumente = sparge_comanda(comanda);
 
-		static const char *const comenzi[] = {
-			"LOAD",	 "SAVE",	  "SELECT",	  "CROP", "ROTATE",
-			"APPLY", "HISTOGRAM", "EQUALIZE", "EXIT",
-		};
-
-		enum comenzi nr_comanda;
-		for (nr_comanda = LOAD; nr_comanda != INVALID; ++nr_comanda) {
-			if (!strcmp(comanda, comenzi[nr_comanda]))
-				break;
-		}
-
+		enum comenzi nr_comanda = potrivire_comanda(comanda);
 		int eroare = 0;
 		switch (nr_comanda) {
 		case LOAD:
 			eroare = incarcare_fisier(&img, argumente);
 			break;
 		case SAVE:
-			if (img)
-				salvare_imagine(*img, argumente);
-			else
-				puts("No image loaded");
+			salvare_imagine(img, argumente);
 			break;
 		case SELECT:
 			selectare_suprafata(img, argumente);

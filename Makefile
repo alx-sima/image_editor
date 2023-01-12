@@ -13,5 +13,8 @@ build: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDLIBS)
 
+pack:
+	zip -FSr 312CA_SimaAlexandru_Tema3.zip README Makefile *.c *.h
+
 clean:
 	-rm -f $(OBJS) $(TARGET) vgcore.*

@@ -3,29 +3,36 @@
 #ifndef STRUCTURI_H
 #define STRUCTURI_H
 
-struct clr {
+// Valorile RGB ale unui pixel.
+struct culoare {
 	unsigned char rosu;
 	unsigned char verde;
 	unsigned char albastru;
 };
 
+// Valorile pe care le poate lua
+// un pixel (RGB sau alb-negru).
 union pixel {
-	struct clr culoare;
+	struct culoare clr;
 	unsigned char val;
 };
 
+// Coordonatele intr-o matrice.
 struct coord {
-	long i;
-	long j;
+	long i, j;
 };
 
 struct imagine {
+	// Matricea de pixeli a imaginii.
 	union pixel **pixeli;
+	// Valoarea maxima a unui pixel.
 	unsigned char val_max;
-	struct coord st;
-	struct coord dr;
-	long inaltime;
-	long latime;
+	// Colturile din stanga-sus si dreapta-jos ale selectiei.
+	// Marginile din drepta si de jos nu sunt inclusa in selectie.
+	struct coord st, dr;
+	// Dimensiunile imaginii.
+	long inaltime, latime;
+	// Retine daca imaginea este color sau alb-negru.
 	int color;
 };
 

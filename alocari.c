@@ -12,6 +12,8 @@ union pixel **aloca_matrice_pixeli(long n, long m)
 
 	for (long i = 0; i < n; ++i) {
 		mat[i] = (union pixel *)malloc(m * sizeof(union pixel));
+		// In caz de eroare se elibereaza ce s-a alocat
+		// pana acum din matrice.
 		if (!mat[i]) {
 			eliberare_matrice_pixeli(mat, i);
 			return NULL;

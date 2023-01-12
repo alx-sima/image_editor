@@ -5,13 +5,22 @@
 
 #include <stdarg.h>
 
-// Modifica `str` astfel incat sa arate spre primul cuvant din
-// string si intoarce un pointer spre restul stringului.
-char *sparge_comanda(char *str);
+// Interschimba numerele de la adresele `a` si `b`.
+void interschimba(long *a, long *b);
 
-// Citeste `nr` valori de tip long din stringul `str`
+// Sorteaza in ordine crescatoare valorile de la adresele `a` si `b`.
+void ordoneaza(long *a, long *b);
+
+// Returneaza cea mai apropiata valoare de `x` din intervalul `[0; max]`.
+unsigned char restrange(double x, unsigned char max);
+
+// Modifica `s` astfel incat sa arate spre primul cuvant din
+// string si intoarce un pointer spre restul stringului.
+char *sparge_comanda(char *s);
+
+// Citeste `nr` valori de tip long din stringul `s`
 // si le stocheaza la adresele date.
 // Returneaza 1 daca au fost citite **exact** `nr` valori.
-int citire_numere(char *str, int nr, ...);
+int citire_numere(char *s, int nr, ...);
 
 #endif // _UTILITARE_H
