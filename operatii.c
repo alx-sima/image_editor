@@ -92,16 +92,16 @@ int rotire_imagine(struct imagine *img, char *argument)
 
 	int sel_tot = inaltime == img->inaltime && latime == img->latime;
 
-	// Daca rotatia se face cu un unghi care nu e multiplu de 180, dimensiunile
-	// se inverseaza, deci trebuie ori ca toata imaginea sa fie selectata,
-	// ori ca selectia sa fie patratica.
-	if (unghi % 180 != 0) {
-		if (sel_tot) {
+	if (sel_tot) {
+		// Daca rotatia se face cu un unghi care nu e
+		// multiplu de 180, dimensiunile se inverseaza.
+		if (unghi % 180 != 0)
 			interschimba(&latime_rez, &inaltime_rez);
-		} else if (latime != inaltime) {
-			puts("The selection must be square");
-			return 0;
-		}
+	} else if (latime != inaltime) {
+		// Daca rotatia se face doar pe o selectie,
+		// aceasta trebuie sa fie patrata.
+		puts("The selection must be square");
+		return 0;
 	}
 
 	union pixel **img_aux = aloca_matrice_pixeli(inaltime_rez, latime_rez);
@@ -182,6 +182,8 @@ int decupare_imagine(struct imagine **img)
 static struct coord rotire_indici(long i, long j, long inaltime, long latime,
 								  int unghi)
 {
+	// Un unghi negativ este
+	// echivalent cu 360 + unghi.
 	if (unghi < 0)
 		unghi += 360;
 

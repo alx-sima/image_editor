@@ -56,9 +56,8 @@ Se afiseaza un mesaj de eroare daca nu este incarcata nicio imagine.
 posibil. Pentru a se face rotirea:
     - Unghiul trebuie sa fie un multiplu de 90.
     - Unghiul trebuie sa fie cuprins in intervalul [-360; 360].
-    - In cazul in care nu este selectata intreaga imagine, dimensiunile
-    subimaginii rotite nu trebuie sa se modifice - pentru a nu ramane goluri in
-    imaginea rotita - adica unghiul sa fie multiplu de 180.
+    - In cazul in care nu este selectata intreaga imagine, selectia trebuie sa
+    fie patratica.
 Rotirea se efectueaza alocandu-se o matrice auxiliara in care se copiaza pixelii
 din selectie, pentru fiecare pixel calculandu-se pozitia originala (inainte de
 rotire). O rotire cu un unghi negativ `x` este echivalenta cu o rotire
