@@ -8,7 +8,10 @@
 #include "operatii.h"
 #include "utilitare.h"
 
-// TODO
+// Randul unui magic word are 4 caractere:
+// 'P' + numar + '\n' + '\0'
+#define LUNG_MAGIC_WORD (2 + 1 + 1)
+
 // Returneaza cifra din magic word a formatului.
 static int verif_format(FILE *);
 
@@ -23,6 +26,12 @@ static unsigned char *citeste_valori_ascii(FILE *f, long n);
 // `n` elemente din fisierul `f`.
 static unsigned char *citeste_valori_binar(FILE *f, long n);
 
+// Scrie imaginea `img` in fisierul `f` in format ascii.
+static void scriere_valori_ascii(FILE *f, struct imagine *img);
+
+// Scrie imaginea `img` in fisierul `f` in format binar.
+static void scriere_valori_binar(FILE *f, struct imagine *img);
+
 char *citire_linie(FILE *fisier)
 {
 	char buffer[BUFSIZ];
@@ -35,7 +44,6 @@ char *citire_linie(FILE *fisier)
 		size_t caract_citite = strlen(buffer);
 		caract_stocate += caract_citite;
 
-		// Se concateneaza caracterele citite la rezultat.
 		char *temp = (char *)realloc(linie, caract_stocate);
 		if (!temp) {
 			free(linie);
@@ -82,16 +90,16 @@ int incarcare_fisier(struct imagine **img, char *nume_fisier)
 	const int color = format % 3 == 0;
 	// Imaginile color folosesc cate 3 octeti
 	// pt un pixel, iar restul cate 1.
-	const int octeti_per_pixel = (color ? 3 : 1);
+	const int dim_pixel = (color ? 3 : 1);
 
 	char *linie = omite_comentarii(fisier);
 
 	long latime, inaltime;
-	int val_max = 1; // TODO
 	citire_numere(linie, 2, &latime, &inaltime);
 
 	// Imaginile alb-negru (P1 si P4) nu
 	// au si o valoare maxima a culorii.
+	int val_max = 1;
 	if (format % 3 != 1) {
 		free(linie);
 		linie = omite_comentarii(fisier);
@@ -99,12 +107,13 @@ int incarcare_fisier(struct imagine **img, char *nume_fisier)
 	}
 
 	free(linie);
-	unsigned char *a;
+	unsigned char *vect_pix;
+	const long nr_octeti = inaltime * latime * dim_pixel;
 	if (ascii)
-		a = citeste_valori_ascii(fisier, inaltime * latime * octeti_per_pixel);
+		vect_pix = citeste_valori_ascii(fisier, nr_octeti);
 	else
-		a = citeste_valori_binar(fisier, inaltime * latime * octeti_per_pixel);
-	if (!a) {
+		vect_pix = citeste_valori_binar(fisier, nr_octeti);
+	if (!vect_pix) {
 		fputs("malloc() fail", stderr);
 		return 1;
 	}
@@ -120,21 +129,19 @@ int incarcare_fisier(struct imagine **img, char *nume_fisier)
 	for (long i = 0; i < inaltime; ++i) {
 		for (long j = 0; j < latime; ++j) {
 			union pixel *p = &(*img)->pixeli[i][j];
+			const int indice_vect = i * latime * dim_pixel + j * dim_pixel;
 			if (color) {
-				p->clr.rosu =
-					a[i * latime * octeti_per_pixel + j * octeti_per_pixel];
-				p->clr.verde =
-					a[i * latime * octeti_per_pixel + j * octeti_per_pixel + 1];
-				p->clr.albastru =
-					a[i * latime * octeti_per_pixel + j * octeti_per_pixel + 2];
+				p->clr.rosu = vect_pix[indice_vect];
+				p->clr.verde = vect_pix[indice_vect + 1];
+				p->clr.albastru = vect_pix[indice_vect + 2];
 			} else {
-				p->val = a[i * latime + j];
+				p->val = vect_pix[indice_vect];
 			}
 		}
 	}
 
 	printf("Loaded %s\n", nume_fisier);
-	free(a);
+	free(vect_pix);
 	fclose(fisier);
 	return 0;
 }
@@ -176,40 +183,23 @@ void salvare_imagine(struct imagine *img, char *argumente)
 	if (format % 3 != 1)
 		fprintf(f, "%d\n", img->val_max);
 
-	for (long i = 0; i < img->inaltime; ++i) {
-		for (long j = 0; j < img->latime; ++j) {
-			union pixel p = img->pixeli[i][j];
-			if (format < 4) {
-				if (img->color)
-					fprintf(f, "%hhu %hhu %hhu", p.clr.rosu, p.clr.verde,
-							p.clr.albastru);
-				else
-					fprintf(f, "%hhu", p.val);
-
-				if (j != img->latime - 1)
-					fputc(' ', f);
-			} else {
-				if (img->color)
-					fwrite(&p.clr, sizeof(unsigned char), 3, f);
-				else
-					fwrite(&p.val, sizeof(unsigned char), 1, f);
-			}
-		}
-		if (format < 4)
-			fputc('\n', f);
-	}
+	// Imaginile ascii sunt P1...P3.
+	if (format < 4)
+		scriere_valori_ascii(f, img);
+	else
+		scriere_valori_binar(f, img);
 
 	printf("Saved %s\n", nume_fisier);
 	fclose(f);
 }
 
-// Returneaza cifra din magic word a formatului.
-// TODO
 static int verif_format(FILE *f)
 {
-	char format[4]; // TODO
-	fgets(format, 4, f);
-	return format[1] - '0';
+	char format[LUNG_MAGIC_WORD];
+	fgets(format, LUNG_MAGIC_WORD, f);
+
+	// Converteste al 2-lea caracter (numarul) in int.
+	return (int)format[1] - '0';
 }
 
 static char *omite_comentarii(FILE *f)
@@ -230,22 +220,23 @@ static unsigned char *citeste_valori_ascii(FILE *f, long n)
 		return NULL;
 
 	char *linie = omite_comentarii(f);
-	char *p = linie;
-	char *q;
+	char *inceput_nr = linie;
+	char *final_nr;
 
-	long i = 0;
-	while (i < n) {
-		unsigned char val = (unsigned char)strtol(p, &q, 10);
+	long nr_val = 0;
+	while (nr_val < n) {
+		unsigned char val = (unsigned char)strtol(inceput_nr, &final_nr, 10);
 		// Nu mai exista valori pe rand, se trece pe urmatorul.
-		if (p == q) {
+		if (inceput_nr == final_nr) {
 			free(linie);
 			linie = citire_linie(f);
-			p = linie;
+			inceput_nr = linie;
 			continue;
 		}
-		p = q;
+		inceput_nr = final_nr;
 
-		v[i++] = val;
+		// Se adauga valoarea la lista in
+		v[nr_val++] = val;
 	}
 	free(linie);
 	return v;
@@ -259,4 +250,35 @@ static unsigned char *citeste_valori_binar(FILE *f, long n)
 
 	fread(v, sizeof(unsigned char), n, f);
 	return v;
+}
+
+static void scriere_valori_ascii(FILE *f, struct imagine *img)
+{
+	for (long i = 0; i < img->inaltime; ++i) {
+		for (long j = 0; j < img->latime; ++j) {
+			union pixel p = img->pixeli[i][j];
+			if (img->color)
+				fprintf(f, "%hhu %hhu %hhu", p.clr.rosu, p.clr.verde,
+						p.clr.albastru);
+			else
+				fprintf(f, "%hhu", p.val);
+
+			// Nu se afiseaza spatiu la final de rand.
+			if (j != img->latime - 1)
+				fputc(' ', f);
+		}
+		fputc('\n', f);
+	}
+}
+
+static void scriere_valori_binar(FILE *f, struct imagine *img)
+{
+	for (long i = 0; i < img->inaltime; ++i) {
+		for (long j = 0; j < img->latime; ++j) {
+			if (img->color)
+				fwrite(&img->pixeli[i][j].clr, sizeof(unsigned char), 3, f);
+			else
+				fwrite(&img->pixeli[i][j].val, sizeof(unsigned char), 1, f);
+		}
+	}
 }

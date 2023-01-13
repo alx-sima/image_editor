@@ -15,6 +15,7 @@ image_check
 tests.json
 
 # build artifacts
+312CA_SimaAlexandru_Tema3.zip
 image_editor
 vgcore.*
 *.o

@@ -76,6 +76,7 @@ int egalizare_imagine(struct imagine *img)
 		return 1;
 	}
 
+	// In frecv[i] retine frecventa intensitatilor <= i.
 	for (long i = 1; i <= img->val_max; ++i)
 		frecv[i] += frecv[i - 1];
 
@@ -83,6 +84,7 @@ int egalizare_imagine(struct imagine *img)
 	for (long i = 0; i < img->inaltime; ++i) {
 		for (long j = 0; j < img->latime; ++j) {
 			unsigned char *p = &img->pixeli[i][j].val;
+
 			*p = restrange((double)img->val_max * frecv[*p] / suprafata,
 						   img->val_max);
 		}
@@ -101,6 +103,8 @@ static long *frecventa_pixeli(struct imagine *img, struct coord st,
 		return NULL;
 
 	int nr_valori = (int)img->val_max + 1;
+	// Intr-un interval trebuie sa incapa
+	// ceil(`nr_valori` / `nr_interv`) valori.
 	long val_per_interv = nr_valori / nr_interv + (nr_valori % nr_interv != 0);
 	for (long i = st.i; i < dr.i; ++i) {
 		for (long j = st.j; j < dr.j; ++j)

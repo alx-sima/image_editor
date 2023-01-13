@@ -1,7 +1,7 @@
 # Copyright Sima Alexandru 312CA (2022-2023)
 
 CC=gcc
-CFLAGS=-Wall -Wextra -g
+CFLAGS=-Wall -Wextra -std=c99
 LDLIBS=-lm
 
 SRCS=$(wildcard *.c)

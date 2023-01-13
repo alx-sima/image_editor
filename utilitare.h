@@ -1,7 +1,7 @@
 // Copyright Sima Alexandru 312CA (2022-2023)
 
-#ifndef _UTILITARE_H
-#define _UTILITARE_H
+#ifndef UTILITARE_H
+#define UTILITARE_H
 
 #include <stdarg.h>
 
@@ -23,4 +23,4 @@ char *sparge_comanda(char *s);
 // Returneaza 1 daca au fost citite **exact** `nr` valori.
 int citire_numere(char *s, int nr, ...);
 
-#endif // _UTILITARE_H
+#endif // UTILITARE_H
